@@ -2,6 +2,8 @@
 
 A full-stack turn-based business simulation game where you play as a startup founder making quarterly decisions on pricing, hiring, and salaries across 10 years (40 quarters). Survive to Year 10 with positive cash to win.
 
+For a deeper system design and scalability write-up, see [approach.md](approach.md).
+
 **Live:** [convergent-turn-based-office-game.vercel.app](https://convergent-turn-based-office-game-aakash-priyadarshis-projects.vercel.app)
 
 ---
@@ -16,7 +18,7 @@ A full-stack turn-based business simulation game where you play as a startup fou
 
 ### AI Bot Advisors
 - **3 strategy bots**: CFO (💰 protect cash), Growth (🚀 aggressive hiring), Quality (⭐ premium product)
-- **Context-aware reasoning** — dynamic advice based on cash level, quality, team size, profit trend, and win proximity
+- **Context-aware reasoning** — dynamic advice based on cash level, quality, team size, and quarters remaining to Year 10
 - **Situation alerts** — animated amber banner after each turn with emoji-tagged briefing (⚠️ cash critical, 🏆 near win, etc.)
 - **Auto-refresh** — bots re-analyze 800ms after each turn advance
 - **One-click apply** — load a bot's recommended values directly into the decision form
@@ -70,7 +72,7 @@ Responsive: stacks vertically on mobile, 3-column grid on desktop.
 | Realtime | Supabase Realtime (presence + broadcasts) |
 | AI | HuggingFace Inference API (zephyr-7b-beta, free tier) |
 | Validation | Zod v4 |
-| Testing | Vitest (14 tests — 8 simulation + 6 bot strategy) |
+| Testing | Vitest (17 tests) |
 | Deployment | Vercel (auto-deploy from `main`) |
 
 ---
@@ -85,17 +87,17 @@ Responsive: stacks vertically on mobile, 3-column grid on desktop.
 ### Setup
 
 ```bash
-# Clone
+# Setup in 5 commands
 git clone https://github.com/aakash-priyadarshi/convergent-turn-based-office-game.git
 cd convergent-turn-based-office-game/app
-
-# Install dependencies
 npm install
-
-# Configure environment
 cp .env.local.example .env.local
-# Edit .env.local with your Supabase credentials
+npm run dev
 ```
+
+Then:
+- Fill in `.env.local` with your Supabase keys
+- Run the SQL migration at `app/supabase/migrations/001_schema.sql` in Supabase Dashboard → SQL Editor
 
 ### Environment Variables
 
@@ -151,7 +153,7 @@ app/
 │   │       └── bots/tick/              # Cron bot auto-play
 │   ├── components/
 │   │   ├── DecisionPanel.tsx           # Decision form + bot advisors
-│   │   ├── KpiCards.tsx                # 6 KPI metric cards
+│   │   ├── KpiCards.tsx                # 8 KPI metric cards
 │   │   ├── TurnHistory.tsx             # Last 4 quarters log
 │   │   ├── OfficeSvg.tsx              # Office floor visualization
 │   │   ├── PresenceFeed.tsx           # Realtime presence + events
