@@ -15,42 +15,42 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     target: 'kpi-cards',
     title: 'KEY PERFORMANCE INDICATORS',
     description:
-      "Track your startup's vital signs here. Cash keeps you alive, Quality drives sales, Engineers improve your product, and Sales people push revenue. Keep cash above $0!",
+      "Track your startup's vital signs. Cash keeps you alive — survive 10 years (40 quarters) with positive cash to win. Revenue and Net Income show last quarter's results. Quality drives demand, and your team size determines costs.",
     position: 'bottom',
   },
   {
     target: 'decision-form',
     title: 'QUARTERLY DECISIONS',
     description:
-      'Every quarter, set 4 key parameters: Product Price (affects demand), Engineers & Sales to hire (grow your team), and Salary level (higher = better retention but more cost).',
+      'Every quarter, set 4 key parameters: Product Price (affects demand via quality×10 − price×0.0001), Engineers & Sales to hire ($5,000 per new hire), and Salary level ($30,000/quarter base — higher attracts talent but costs more).',
     position: 'right',
   },
   {
     target: 'advance-btn',
     title: 'ADVANCE QUARTER',
     description:
-      "Click this button to simulate the next quarter once you've set your decisions. The market responds to your pricing, and your team affects product quality and sales.",
+      "Click to simulate the next quarter. Engineers boost product quality (+0.5 per engineer, cap 100). Sales staff convert demand into units sold. Revenue minus payroll equals net income — keep cash above $0 through Year 10 to win!",
     position: 'right',
   },
   {
     target: 'bot-advisors',
     title: 'AI STRATEGY ADVISORS',
     description:
-      'Click "GET ADVICE" for AI analysis. Three bots analyze your startup and suggest strategies. Click "APPLY" on any recommendation to load those values into your decision form.',
+      'Three AI bots analyze your situation each turn. CFO protects cash, Growth scales fast, Quality builds premium. They adapt to late-game survival when Year 10 approaches. Click "APPLY" to load their recommended values.',
     position: 'right',
   },
   {
     target: 'office-floor',
     title: 'OFFICE VISUALIZATION',
     description:
-      'Watch your team grow! Blue desks = Engineers (improve quality), Green desks = Sales (drive revenue). Plan hiring carefully — you have 30 desks total!',
+      'Watch your team grow! Blue desks = Engineers (improve quality), Green desks = Sales (drive revenue). Each person costs salary per quarter, so hiring impacts your runway.',
     position: 'top',
   },
   {
     target: 'turn-history',
     title: 'QUARTER HISTORY',
     description:
-      'Review past quarter results here. Track revenue, costs, units sold, and profit trends to make better decisions going forward.',
+      'Review the last 4 quarters: revenue, costs, units sold, and profit. Use trends to calibrate pricing and hiring for the quarters ahead.',
     position: 'top',
   },
 ];
