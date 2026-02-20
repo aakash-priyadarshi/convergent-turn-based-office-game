@@ -74,30 +74,64 @@ export default function PresenceFeed({ gameId, onUpdate }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
+  const [expanded, setExpanded] = useState(false);
+
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' : 'bg-amber-500'}`} />
-          <span className="font-mono text-xs font-medium text-slate-300">
-            {presenceCount === 0 ? 'You' : `You + ${presenceCount} ${presenceCount === 1 ? 'spectator' : 'spectators'}`}
-          </span>
-        </div>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600">
-          {connected ? 'LIVE' : 'POLLING'}
+    <div className="relative">
+      {/* Compact always-visible bar */}
+      <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-1.5">
+        <div className={`w-2 h-2 rounded-full shrink-0 ${connected ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' : 'bg-amber-500'}`} />
+        <span className="font-mono text-xs font-medium text-slate-300 whitespace-nowrap">
+          {presenceCount === 0 ? 'You' : `You + ${presenceCount}`}
         </span>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600">
+          {connected ? 'LIVE' : 'POLL'}
+        </span>
+
+        {events.length > 0 && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="ml-1 flex items-center gap-1 font-mono text-[10px] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+            title={expanded ? 'Collapse activity' : 'Show activity'}
+          >
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[9px] font-bold leading-none">
+              {events.length}
+            </span>
+            <svg
+              className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        )}
       </div>
 
-      {events.length > 0 && (
-        <div className="border-t border-white/5 pt-2 mt-2 space-y-1 max-h-32 overflow-y-auto">
-          {events.map((evt, i) => (
-            <div key={i} className="font-mono text-[10px] text-slate-500 flex justify-between">
-              <span>{evt.message}</span>
-              <span className="text-slate-700">
-                {new Date(evt.timestamp).toLocaleTimeString()}
-              </span>
-            </div>
-          ))}
+      {/* Expandable activity feed dropdown */}
+      {expanded && events.length > 0 && (
+        <div className="absolute right-0 top-full mt-1 z-50 w-72 rounded-xl border border-white/10 bg-slate-900/95 backdrop-blur-md shadow-xl p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">Activity Feed</span>
+            <button
+              onClick={() => setExpanded(false)}
+              className="font-mono text-[10px] text-slate-600 hover:text-slate-300 transition-colors cursor-pointer"
+            >
+              CLOSE
+            </button>
+          </div>
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {events.map((evt, i) => (
+              <div key={i} className="font-mono text-[10px] text-slate-400 flex justify-between gap-2">
+                <span className="truncate">{evt.message}</span>
+                <span className="text-slate-600 whitespace-nowrap">
+                  {new Date(evt.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
