@@ -2,7 +2,7 @@
 
 ## Architecture
 
-**Monolith on Next.js App Router** — all API routes, UI, and simulation logic live in one deployable unit on Vercel. Supabase provides auth, Postgres, and realtime channels. HuggingFace Inference API powers optional AI-generated founder bios.
+**Monolith on Next.js App Router** — I kept this as a single deployable Next.js app on Vercel. It’s cheap, simple, and easy to reason about in a take-home setting. Supabase provides auth, Postgres, and realtime channels. HuggingFace Inference API powers optional AI-generated founder bios.
 
 ```
 Client (React 19 + Framer Motion)
@@ -26,7 +26,7 @@ Client (React 19 + Framer Motion)
 - server-authoritative state transitions
 - deterministic simulation + testability
 - secure persistence with RLS and ownership checks
-- additive JD signals (realtime/caching/AI) that cannot break core gameplay
+- optional extras (realtime/caching/AI) that stay out of the critical path
 
 ---
 
@@ -41,13 +41,13 @@ Client (React 19 + Framer Motion)
 | `external_cache` | Key-value store with `fetched_at` for SWR caching |
 
 ### Concurrency Control
-`games.version` (integer) — every advance increments version. The API checks `WHERE version = expected_version` so two simultaneous advances cannot both succeed. Also used as `turnVersion` prop to trigger automatic bot advisor refresh on the client.
+`games.version` (integer) — every advance increments version. The API checks `WHERE version = expected_version` so two simultaneous advances cannot both succeed. I also surface this as `turnVersion` on the client to trigger bot refresh.
 
 ### Row-Level Security (RLS)
-- Games / Turns / Participants readable by anyone (enables spectator mode)
-- Writes restricted to game owner via `auth.uid()`
-- Profile read/write restricted to own user
-- `external_cache` read-only for anon; write via service role
+- I allow anyone to read Games / Turns / Participants (this is what enables spectator mode)
+- I restrict writes to the game owner via `auth.uid()`
+- I restrict profile read/write to the owning user
+- `external_cache` stays read-only for anon; writes go through the service role
 
 ---
 
@@ -69,6 +69,8 @@ Client (React 19 + Framer Motion)
 ---
 
 ## Features
+
+This section is intentionally a checklist so reviewers can map visible behavior to code quickly.
 
 ### Authentication & Identity
 - **Email/password auth** via Supabase — login + signup with distinct flows

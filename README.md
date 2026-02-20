@@ -1,8 +1,8 @@
 # STARTUP.SIM — Turn-Based Startup Simulation
 
-A full-stack turn-based business simulation game where you play as a startup founder making quarterly decisions on pricing, hiring, and salaries across 10 years (40 quarters). Survive to Year 10 with positive cash to win.
+I built a turn-based business simulation where you play a startup founder making quarterly decisions on pricing, hiring, and salaries across 10 years (40 quarters). Survive to Year 10 with positive cash to win.
 
-For a deeper system design and scalability write-up, see [approach.md](approach.md).
+For the design notes and tradeoffs, see [approach.md](approach.md).
 
 **Live:** [convergent-turn-based-office-game.vercel.app](https://convergent-turn-based-office-game-aakash-priyadarshis-projects.vercel.app)
 
@@ -16,15 +16,15 @@ For a deeper system design and scalability write-up, see [approach.md](approach.
 
 ## Documentation Guide
 
-This repo includes three short documents to make evaluation faster:
+I kept three short documents to make evaluation faster:
 
 - **[README.md](./README.md)** — product overview, setup, feature list, and architecture decisions.
 - **[DESIGN.md](./design.md)** — system architecture, data model, concurrency control, and risk mitigation.
 - **[approach.md](./approach.md)** — implementation story, tradeoffs, spec-alignment decisions, and scaling plan.
 
-If you are time-constrained, reading the TL;DR and the “Architecture Decisions” section in this README is enough to understand the core design.
+If you’re short on time, reading the TL;DR and the “Architecture Decisions” section in this README is enough to understand the core design.
 
-The core game is fully playable without AI, realtime, or bots; these are additive and non-blocking by design.
+I made sure the core game is fully playable without AI, realtime, or bots; those are additive and non-blocking by design.
 
 ---
 
@@ -37,16 +37,16 @@ The core game is fully playable without AI, realtime, or bots; these are additiv
 - **Market factor system** — daily sine-wave variation (0.8–1.2×) cached with SWR pattern
 
 ### AI Bot Advisors
-- **3 strategy bots**: CFO (💰 protect cash), Growth (🚀 aggressive hiring), Quality (⭐ premium product)
-- **Context-aware reasoning** — dynamic advice based on cash level, quality, team size, and quarters remaining to Year 10
-- **Situation alerts** — animated amber banner after each turn with emoji-tagged briefing (⚠️ cash critical, 🏆 near win, etc.)
-- **Auto-refresh** — bots re-analyze 800ms after each turn advance
-- **One-click apply** — load a bot's recommended values directly into the decision form
+- **3 deterministic strategy bots**: CFO (cash-first), Growth (hire-first), Quality (premium-first)
+- **State-aware output** — advice changes based on cash, quality, team size, and quarters remaining
+- **Situation alerts** — short post-turn brief (cash critical, near win, etc.)
+- **Auto-refresh** — advice re-runs after each quarter advance
+- **One-click apply** — apply a recommendation into the decision form
 
 ### Global Leaderboard
 - **Ranked table** of all players sorted by best cumulative profit (top 20)
-- **🥇🥈🥉 medals** for top 3; current player highlighted with "YOU" badge
-- **Stats per player**: high score, wins, games played
+- Top 3 get medals; the current player is highlighted
+- Per-player stats: high score, wins, games played
 
 ### Homepage — 3-Column Layout
 | Left | Middle | Right |
@@ -74,10 +74,10 @@ Responsive: stacks vertically on mobile, 3-column grid on desktop.
 - **Strategy overview finale** with win/lose conditions
 
 ### Visual Design
-- **Dark command-center theme** — slate-950 background, glassmorphism cards, monospace typography
-- **Animated particle background** — 60 floating particles with connection lines on canvas
-- **Framer Motion** — fade-in, slide, scale, AnimatePresence throughout
-- **Glitch wrapper** + **market ticker SVG** + **ScrambleButton** animations on auth pages
+- **Dark dashboard theme** — slate background, glassy cards, monospace typography
+- **Particle background** — lightweight canvas effect
+- **Framer Motion** — used for feedback on state changes
+- Small UI flourishes on auth pages (glitch wrapper, ticker SVG, ScrambleButton)
 
 ---
 
@@ -99,28 +99,28 @@ Responsive: stacks vertically on mobile, 3-column grid on desktop.
 
 ## Architecture Decisions
 
-- **Spec model as-provided** — simulation uses the exact formulas from the assignment spec (`quality += engineers * 0.5`, `demand = quality * 10 - price * 0.0001`, etc.) with no constant modifications
-- **Optimistic locking** — `games.version` column prevents double-advances
+- **Spec model as-provided** — I use the exact formulas from the assignment spec (`quality += engineers * 0.5`, `demand = quality * 10 - price * 0.0001`, etc.) with no constant modifications
+- **Optimistic locking** — I use a `games.version` column to prevent double-advances
 - **Pure simulation engine** — `advanceQuarter()` is a pure function with no side effects; deterministic and testable
-- **RLS everywhere** — Supabase Row-Level Security on all 5 tables; writes restricted to owner, reads open for spectators
-- **SWR cache** — market factor cached in Postgres with `fetched_at` timestamp; serves stale while refreshing
-- **No paid APIs** — HuggingFace free tier for AI bios; template fallback if unavailable
-- **Polling fallback** — realtime presence degrades to 5s polling if Supabase channels fail
+- **RLS everywhere** — I use Supabase Row-Level Security on all 5 tables; writes restricted to owner, reads open for spectators
+- **SWR cache** — I cache market factor in Postgres with a `fetched_at` timestamp; serve stale while refreshing
+- **No paid APIs** — I used HuggingFace free tier for AI bios, with a template fallback
+- **Polling fallback** — realtime presence drops back to 5s polling if Supabase channels fail
 
 ---
 
 ## Scope control
 
-Everything beyond the core loop is additive and non-blocking:
+I kept everything beyond the core loop additive and non-blocking:
 
-- **Single mutation path** — only one endpoint (`/advance`) mutates game state. Bots, realtime, leaderboard, and AI bios are read-only or out-of-band.
+- **Single mutation path** — only one endpoint (`/api/game/[id]/advance`) mutates game state. Bots, realtime, leaderboard, and AI bios are read-only or out-of-band.
 - **Graceful degradation** — if AI, realtime, or the bot tick is unavailable, the game is still fully playable with no code changes.
 - **No spec modifications** — extras layer on top of the spec model; they never alter the simulation formulas or initial state.
 - **Deliberate cuts** — no multiplayer competition, no undo/replay, no paid APIs. Each was considered and descoped.
 
 ## Spec alignment notes
 
-Three places where my implementation interprets the spec:
+Three places where I had to interpret the spec:
 
 1. **Market factor** — a daily sine-wave multiplier (0.8–1.2×) on units sold. It defaults to 1.0, so when the cache is empty or stale the simulation matches the raw spec exactly.
 2. **Integer units** — the spec says units sold should be an integer. I use `Math.round()` on the computed value. `Math.floor()` would also be valid; rounding is closer to the arithmetic intent.
@@ -243,7 +243,7 @@ app/
 
 ## Simulation Model
 
-The model is implemented exactly as specified in the assignment:
+I implemented the model exactly as specified in the assignment:
 
 | Variable | Formula |
 |----------|--------|
