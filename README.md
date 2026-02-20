@@ -18,9 +18,9 @@ For a deeper system design and scalability write-up, see [approach.md](approach.
 
 This repo includes three short documents to make evaluation faster:
 
-- **README.md** — product overview, setup, feature list, and architecture decisions.
-- **DESIGN.md** — system architecture, data model, concurrency control, and risk mitigation.
-- **approach.md** — implementation story, tradeoffs, spec-alignment decisions, and scaling plan.
+- **[README.md](./README.md)** — product overview, setup, feature list, and architecture decisions.
+- **[DESIGN.md](./design.md)** — system architecture, data model, concurrency control, and risk mitigation.
+- **[approach.md](./approach.md)** — implementation story, tradeoffs, spec-alignment decisions, and scaling plan.
 
 If you are time-constrained, reading the TL;DR and the “Architecture Decisions” section in this README is enough to understand the core design.
 
