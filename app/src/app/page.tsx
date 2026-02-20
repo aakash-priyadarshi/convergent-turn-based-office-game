@@ -2,12 +2,23 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import type { GameState } from '@/lib/types';
 import Background from '@/components/login/Background';
 import OnboardingModal from '@/components/OnboardingModal';
+
+interface LeaderboardEntry {
+  playerId: string;
+  displayName: string;
+  highScore: number;
+  wins: number;
+  totalGames: number;
+  bestYear: number;
+  bestQuarter: number;
+  hasBio: boolean;
+}
 
 export default function HomePage() {
   const supabase = createClient();
@@ -18,6 +29,18 @@ export default function HomePage() {
   const [creating, setCreating] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [founderBio, setFounderBio] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
+      if (data.leaderboard) setLeaderboard(data.leaderboard);
+    } catch {
+      // Non-blocking
+    }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -50,6 +73,7 @@ export default function HomePage() {
 
       setGames((data as GameState[]) ?? []);
       setLoading(false);
+      fetchLeaderboard();
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -218,6 +242,96 @@ export default function HomePage() {
                 )}
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Global Leaderboard */}
+        {leaderboard.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm mb-8 overflow-hidden"
+          >
+            <button
+              type="button"
+              onClick={() => setShowLeaderboard((v) => !v)}
+              className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">🏆</span>
+                <span className="font-mono text-sm font-semibold text-white tracking-wider">GLOBAL LEADERBOARD</span>
+                <span className="font-mono text-[10px] text-slate-500 border border-white/10 rounded-full px-2 py-0.5">
+                  {leaderboard.length} FOUNDER{leaderboard.length !== 1 ? 'S' : ''}
+                </span>
+              </div>
+              <span className={`font-mono text-xs text-slate-500 transition-transform duration-200 ${showLeaderboard ? 'rotate-180' : ''}`}>
+                ▾
+              </span>
+            </button>
+
+            <AnimatePresence>
+              {showLeaderboard && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <div className="border-t border-white/10">
+                    {/* Header row */}
+                    <div className="grid grid-cols-12 gap-2 px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-slate-600">
+                      <div className="col-span-1">#</div>
+                      <div className="col-span-4">FOUNDER</div>
+                      <div className="col-span-3 text-right">HIGH SCORE</div>
+                      <div className="col-span-2 text-right">WINS</div>
+                      <div className="col-span-2 text-right">GAMES</div>
+                    </div>
+
+                    {/* Player rows */}
+                    {leaderboard.map((entry, i) => {
+                      const isMe = entry.playerId === user?.id;
+                      const isPositive = entry.highScore >= 0;
+                      const rankEmoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null;
+                      return (
+                        <div
+                          key={entry.playerId}
+                          className={`grid grid-cols-12 gap-2 px-4 py-2.5 items-center transition-colors ${
+                            isMe
+                              ? 'bg-blue-500/10 border-l-2 border-l-blue-500'
+                              : 'hover:bg-white/[0.03] border-l-2 border-l-transparent'
+                          }`}
+                        >
+                          <div className="col-span-1 font-mono text-xs text-slate-500">
+                            {rankEmoji || `${i + 1}`}
+                          </div>
+                          <div className="col-span-4 flex items-center gap-2 min-w-0">
+                            <span className={`font-mono text-xs truncate ${isMe ? 'text-blue-300 font-semibold' : 'text-slate-300'}`}>
+                              {entry.displayName}
+                            </span>
+                            {isMe && (
+                              <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400">
+                                YOU
+                              </span>
+                            )}
+                          </div>
+                          <div className={`col-span-3 text-right font-mono text-xs font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {isPositive ? '+' : ''}${Math.abs(entry.highScore).toLocaleString()}
+                          </div>
+                          <div className="col-span-2 text-right font-mono text-xs text-slate-400">
+                            {entry.wins}
+                          </div>
+                          <div className="col-span-2 text-right font-mono text-xs text-slate-500">
+                            {entry.totalGames}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 
