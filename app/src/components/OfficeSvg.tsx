@@ -87,7 +87,7 @@ function FloorSection({ title, count, icon, accentClass, badgeClass, cellClass }
           <span className="font-mono text-[10px] text-slate-600">No staff</span>
         </div>
       ) : (
-        <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5">
+        <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-10 gap-1.5">
           {Array.from({ length: count }, (_, i) => (
             <div
               key={i}

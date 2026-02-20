@@ -193,12 +193,16 @@ export default function GamePage() {
             )}
           </div>
 
-          {/* Right: KPIs, history, office */}
+          {/* Right: KPIs, history */}
           <div className="lg:col-span-2 space-y-4">
             <KpiCards game={game} lastOutcomes={turns.length > 0 ? (turns[0].outcomes as Outcomes) : undefined} />
-            <OfficeSvg engineers={game.engineers} sales={game.sales} />
             <TurnHistory turns={turns} />
           </div>
+        </div>
+
+        {/* Office floor — full width below the main grid */}
+        <div className="max-w-7xl mx-auto px-4 pb-6">
+          <OfficeSvg engineers={game.engineers} sales={game.sales} />
         </div>
       </div>
     </div>
