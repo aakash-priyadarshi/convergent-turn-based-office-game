@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import type { GameState } from '@/lib/types';
 import Background from '@/components/login/Background';
@@ -30,7 +30,6 @@ export default function HomePage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [founderBio, setFounderBio] = useState<string | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const fetchLeaderboard = useCallback(async () => {
     try {
@@ -124,15 +123,15 @@ export default function HomePage() {
         }} />
       )}
 
-      <div className="relative z-10 max-w-3xl mx-auto px-6 py-10">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Top bar */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-10"
+          className="flex items-center justify-between mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold tracking-tighter text-white">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tighter text-white">
               STARTUP<span className="text-blue-500">.</span>SIM
             </h1>
             <p className="mt-1 font-mono text-xs text-slate-500">
@@ -141,7 +140,7 @@ export default function HomePage() {
                 <>
                   <span className="text-slate-300">{String(user.user_metadata.display_name)}</span>
                   <span className="text-slate-600"> &middot; </span>
-                  <span className="text-slate-500">{user?.email}</span>
+                  <span className="text-slate-500 hidden sm:inline">{user?.email}</span>
                 </>
               ) : (
                 <>
@@ -150,263 +149,266 @@ export default function HomePage() {
               )}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/profile"
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-mono text-slate-400 transition-all hover:bg-white/10 hover:text-white"
+              className="rounded-lg border border-white/10 bg-white/5 px-3 sm:px-4 py-2 text-xs font-mono text-slate-400 transition-all hover:bg-white/10 hover:text-white"
             >
               PROFILE
             </Link>
             <button
               onClick={handleSignOut}
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-mono text-slate-500 transition-all hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 cursor-pointer"
+              className="rounded-lg border border-white/10 bg-white/5 px-3 sm:px-4 py-2 text-xs font-mono text-slate-500 transition-all hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 cursor-pointer"
             >
               SIGN OUT
             </button>
           </div>
         </motion.div>
 
-        {/* Founder Scorecard */}
-        {games.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm mb-8 overflow-hidden"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              {/* Left: High Score */}
-              <div className="p-6 border-b md:border-b-0 md:border-r border-white/10">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500 block mb-2">
-                  HIGH SCORE
-                </span>
-                {(() => {
-                  const bestGame = games.reduce((best, g) =>
-                    Number(g.cumulative_profit) > Number(best.cumulative_profit) ? g : best
-                  );
-                  const highScore = Number(bestGame.cumulative_profit);
-                  const isPositive = highScore >= 0;
-                  const wins = games.filter(g => g.status === 'won').length;
-                  const totalGames = games.length;
-                  return (
-                    <>
-                      <div className={`font-mono text-3xl font-bold tracking-tight ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {isPositive ? '+' : ''}${Math.abs(highScore).toLocaleString()}
-                      </div>
-                      <div className="font-mono text-[10px] text-slate-500 mt-2 space-x-3">
-                        <span>
-                          <span className="text-slate-400">{wins}</span> WIN{wins !== 1 ? 'S' : ''}
-                        </span>
-                        <span className="text-slate-700">&middot;</span>
-                        <span>
-                          <span className="text-slate-400">{totalGames}</span> VENTURE{totalGames !== 1 ? 'S' : ''}
-                        </span>
-                        <span className="text-slate-700">&middot;</span>
-                        <span>
-                          BEST: <span className="text-slate-400">Y{bestGame.current_year} Q{bestGame.current_quarter}</span>
-                        </span>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
+        {/* 3-Column Layout: Left (scorecard) | Middle (ventures) | Right (leaderboard) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-              {/* Right: Player Story */}
-              <div className="p-6">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500 block mb-2">
-                  FOUNDER&apos;S STORY
-                </span>
-                {founderBio ? (
-                  <p className="font-mono text-xs text-slate-300 leading-relaxed line-clamp-4">
-                    {founderBio}
+          {/* ─── LEFT COLUMN: Player Scorecard + Story ─── */}
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.08 }}
+            className="lg:col-span-3 space-y-4"
+          >
+            {/* High Score Card */}
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500 block mb-2">
+                YOUR HIGH SCORE
+              </span>
+              {games.length > 0 ? (() => {
+                const bestGame = games.reduce((best, g) =>
+                  Number(g.cumulative_profit) > Number(best.cumulative_profit) ? g : best
+                );
+                const highScore = Number(bestGame.cumulative_profit);
+                const isPositive = highScore >= 0;
+                const wins = games.filter(g => g.status === 'won').length;
+                const totalGames = games.length;
+                return (
+                  <>
+                    <div className={`font-mono text-2xl xl:text-3xl font-bold tracking-tight ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {isPositive ? '+' : ''}${Math.abs(highScore).toLocaleString()}
+                    </div>
+                    <div className="font-mono text-[10px] text-slate-500 mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                      <span>
+                        <span className="text-slate-400">{wins}</span> WIN{wins !== 1 ? 'S' : ''}
+                      </span>
+                      <span className="text-slate-700">&middot;</span>
+                      <span>
+                        <span className="text-slate-400">{totalGames}</span> GAME{totalGames !== 1 ? 'S' : ''}
+                      </span>
+                      <span className="text-slate-700">&middot;</span>
+                      <span>
+                        BEST: <span className="text-slate-400">Y{bestGame.current_year}Q{bestGame.current_quarter}</span>
+                      </span>
+                    </div>
+                  </>
+                );
+              })() : (
+                <div className="font-mono text-2xl font-bold text-slate-600">$0</div>
+              )}
+            </div>
+
+            {/* Founder Story Card */}
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500 block mb-2">
+                FOUNDER&apos;S STORY
+              </span>
+              {founderBio ? (
+                <p className="font-mono text-[11px] text-slate-300 leading-relaxed line-clamp-6">
+                  {founderBio}
+                </p>
+              ) : (
+                <div>
+                  <p className="font-mono text-[11px] text-slate-600 italic">
+                    No story yet — complete your profile to craft your narrative.
                   </p>
-                ) : (
-                  <div>
-                    <p className="font-mono text-xs text-slate-600 italic">
-                      No story yet — complete your profile to craft your founder narrative.
-                    </p>
-                    <Link
-                      href="/profile"
-                      className="inline-block mt-2 font-mono text-[10px] uppercase tracking-wider text-blue-400 hover:text-blue-300 transition-colors"
-                    >
-                      CREATE YOUR STORY &rarr;
-                    </Link>
-                  </div>
-                )}
-                {typeof user?.user_metadata?.display_name === 'string' && (
-                  <div className="mt-3 pt-3 border-t border-white/5">
-                    <span className="font-mono text-[10px] text-slate-600">
-                      &mdash; {user.user_metadata.display_name}, Founder
-                    </span>
-                  </div>
-                )}
-              </div>
+                  <Link
+                    href="/profile"
+                    className="inline-block mt-2 font-mono text-[10px] uppercase tracking-wider text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    CREATE YOUR STORY &rarr;
+                  </Link>
+                </div>
+              )}
+              {typeof user?.user_metadata?.display_name === 'string' && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <span className="font-mono text-[10px] text-slate-600">
+                    &mdash; {user.user_metadata.display_name}, Founder
+                  </span>
+                </div>
+              )}
             </div>
           </motion.div>
-        )}
 
-        {/* Global Leaderboard */}
-        {leaderboard.length > 0 && (
+          {/* ─── MIDDLE COLUMN: Launch + Recent Ventures ─── */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12 }}
-            className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm mb-8 overflow-hidden"
+            className="lg:col-span-5 space-y-4"
           >
+            {/* New game button */}
             <button
-              type="button"
-              onClick={() => setShowLeaderboard((v) => !v)}
-              className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors"
+              onClick={createGame}
+              disabled={creating}
+              className="group w-full rounded-xl border border-dashed border-blue-500/30 bg-blue-500/5 py-5 font-mono text-sm font-bold tracking-wider text-blue-400 transition-all hover:border-blue-500/60 hover:bg-blue-500/10 hover:shadow-[0_0_40px_-10px_rgba(59,130,246,0.3)] disabled:opacity-50 cursor-pointer"
             >
-              <div className="flex items-center gap-2.5">
-                <span className="text-lg">🏆</span>
-                <span className="font-mono text-sm font-semibold text-white tracking-wider">GLOBAL LEADERBOARD</span>
-                <span className="font-mono text-[10px] text-slate-500 border border-white/10 rounded-full px-2 py-0.5">
-                  {leaderboard.length} FOUNDER{leaderboard.length !== 1 ? 'S' : ''}
-                </span>
-              </div>
-              <span className={`font-mono text-xs text-slate-500 transition-transform duration-200 ${showLeaderboard ? 'rotate-180' : ''}`}>
-                ▾
-              </span>
+              {creating ? (
+                <span className="animate-pulse">INITIALIZING VENTURE...</span>
+              ) : (
+                <span>+ LAUNCH NEW VENTURE</span>
+              )}
             </button>
 
-            <AnimatePresence>
-              {showLeaderboard && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className="overflow-hidden"
-                >
-                  <div className="border-t border-white/10">
-                    {/* Header row */}
-                    <div className="grid grid-cols-12 gap-2 px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-slate-600">
-                      <div className="col-span-1">#</div>
-                      <div className="col-span-4">FOUNDER</div>
-                      <div className="col-span-3 text-right">HIGH SCORE</div>
-                      <div className="col-span-2 text-right">WINS</div>
-                      <div className="col-span-2 text-right">GAMES</div>
-                    </div>
+            {/* Section header */}
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                RECENT VENTURES
+              </span>
+              <span className="font-mono text-[10px] text-slate-700">
+                {games.length} TOTAL
+              </span>
+            </div>
 
-                    {/* Player rows */}
-                    {leaderboard.map((entry, i) => {
-                      const isMe = entry.playerId === user?.id;
-                      const isPositive = entry.highScore >= 0;
-                      const rankEmoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null;
-                      return (
-                        <div
-                          key={entry.playerId}
-                          className={`grid grid-cols-12 gap-2 px-4 py-2.5 items-center transition-colors ${
-                            isMe
-                              ? 'bg-blue-500/10 border-l-2 border-l-blue-500'
-                              : 'hover:bg-white/[0.03] border-l-2 border-l-transparent'
+            {/* Games list */}
+            {games.length === 0 ? (
+              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-8 text-center">
+                <p className="font-mono text-xs text-slate-500">
+                  No ventures yet. Launch one above to begin.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
+                {games.map((g, i) => (
+                  <motion.button
+                    key={g.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.05 + i * 0.03 }}
+                    onClick={() => router.push(`/game/${g.id}`)}
+                    className="group w-full text-left rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all hover:bg-white/10 hover:border-white/20 hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.2)] cursor-pointer"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono text-sm font-bold text-white">
+                          Y{g.current_year} Q{g.current_quarter}
+                        </span>
+                        <span
+                          className={`font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                            g.status === 'active'
+                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                              : g.status === 'won'
+                              ? 'border-blue-500/30 bg-blue-500/10 text-blue-400'
+                              : 'border-red-500/30 bg-red-500/10 text-red-400'
                           }`}
                         >
-                          <div className="col-span-1 font-mono text-xs text-slate-500">
-                            {rankEmoji || `${i + 1}`}
-                          </div>
-                          <div className="col-span-4 flex items-center gap-2 min-w-0">
-                            <span className={`font-mono text-xs truncate ${isMe ? 'text-blue-300 font-semibold' : 'text-slate-300'}`}>
-                              {entry.displayName}
-                            </span>
-                            {isMe && (
-                              <span className="shrink-0 font-mono text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400">
-                                YOU
-                              </span>
-                            )}
-                          </div>
-                          <div className={`col-span-3 text-right font-mono text-xs font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {isPositive ? '+' : ''}${Math.abs(entry.highScore).toLocaleString()}
-                          </div>
-                          <div className="col-span-2 text-right font-mono text-xs text-slate-400">
-                            {entry.wins}
-                          </div>
-                          <div className="col-span-2 text-right font-mono text-xs text-slate-500">
-                            {entry.totalGames}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                          {g.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-sm text-slate-400">
+                          ${Number(g.cash).toLocaleString()}
+                        </span>
+                        <span className="text-slate-600 group-hover:text-slate-400 transition-colors">
+                          &rarr;
+                        </span>
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            )}
           </motion.div>
-        )}
 
-        {/* New game button */}
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          onClick={createGame}
-          disabled={creating}
-          className="group w-full rounded-xl border border-dashed border-blue-500/30 bg-blue-500/5 py-5 font-mono text-sm font-bold tracking-wider text-blue-400 transition-all hover:border-blue-500/60 hover:bg-blue-500/10 hover:shadow-[0_0_40px_-10px_rgba(59,130,246,0.3)] disabled:opacity-50 cursor-pointer mb-8"
-        >
-          {creating ? (
-            <span className="animate-pulse">INITIALIZING VENTURE...</span>
-          ) : (
-            <span>+ LAUNCH NEW VENTURE</span>
-          )}
-        </motion.button>
-
-        {/* Games list */}
-        {games.length === 0 ? (
+          {/* ─── RIGHT COLUMN: Global Leaderboard ─── */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-xl border border-white/5 bg-white/[0.02] p-10 text-center"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 }}
+            className="lg:col-span-4"
           >
-            <p className="font-mono text-sm text-slate-500">
-              No ventures yet. Launch one to begin your simulation.
-            </p>
-          </motion.div>
-        ) : (
-          <div className="space-y-3">
-            {games.map((g, i) => (
-              <motion.button
-                key={g.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 + i * 0.05 }}
-                onClick={() => router.push(`/game/${g.id}`)}
-                className="group w-full text-left rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm transition-all hover:bg-white/10 hover:border-white/20 hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.2)] cursor-pointer"
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm font-bold text-white">
-                      Y{g.current_year} Q{g.current_quarter}
-                    </span>
-                    <span
-                      className={`font-mono text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                        g.status === 'active'
-                          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                          : g.status === 'won'
-                          ? 'border-blue-500/30 bg-blue-500/10 text-blue-400'
-                          : 'border-red-500/30 bg-red-500/10 text-red-400'
-                      }`}
-                    >
-                      {g.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-mono text-sm text-slate-400">
-                      ${Number(g.cash).toLocaleString()}
-                    </span>
-                    <span className="text-slate-600 group-hover:text-slate-400 transition-colors">
-                      &rarr;
-                    </span>
-                  </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
+              {/* Header */}
+              <div className="p-4 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">🏆</span>
+                  <span className="font-mono text-sm font-semibold text-white tracking-wider">GLOBAL LEADERBOARD</span>
                 </div>
-              </motion.button>
-            ))}
-          </div>
-        )}
+                {leaderboard.length > 0 && (
+                  <span className="font-mono text-[10px] text-slate-500 mt-1 block">
+                    {leaderboard.length} FOUNDER{leaderboard.length !== 1 ? 'S' : ''} COMPETING
+                  </span>
+                )}
+              </div>
+
+              {/* Leaderboard content */}
+              {leaderboard.length === 0 ? (
+                <div className="p-6 text-center">
+                  <p className="font-mono text-xs text-slate-600">No scores yet — be the first!</p>
+                </div>
+              ) : (
+                <div className="max-h-[60vh] overflow-y-auto">
+                  {/* Column headers */}
+                  <div className="grid grid-cols-12 gap-1 px-4 py-2 font-mono text-[9px] uppercase tracking-wider text-slate-600 sticky top-0 bg-slate-950/80 backdrop-blur-sm border-b border-white/5">
+                    <div className="col-span-1">#</div>
+                    <div className="col-span-5">FOUNDER</div>
+                    <div className="col-span-3 text-right">SCORE</div>
+                    <div className="col-span-1 text-right">W</div>
+                    <div className="col-span-2 text-right">GP</div>
+                  </div>
+
+                  {/* Player rows */}
+                  {leaderboard.map((entry, i) => {
+                    const isMe = entry.playerId === user?.id;
+                    const isPositive = entry.highScore >= 0;
+                    const rankEmoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null;
+                    return (
+                      <div
+                        key={entry.playerId}
+                        className={`grid grid-cols-12 gap-1 px-4 py-2.5 items-center transition-colors ${
+                          isMe
+                            ? 'bg-blue-500/10 border-l-2 border-l-blue-500'
+                            : 'hover:bg-white/[0.03] border-l-2 border-l-transparent'
+                        }`}
+                      >
+                        <div className="col-span-1 font-mono text-xs text-slate-500">
+                          {rankEmoji || `${i + 1}`}
+                        </div>
+                        <div className="col-span-5 flex items-center gap-1.5 min-w-0">
+                          <span className={`font-mono text-[11px] truncate ${isMe ? 'text-blue-300 font-semibold' : 'text-slate-300'}`}>
+                            {entry.displayName}
+                          </span>
+                          {isMe && (
+                            <span className="shrink-0 font-mono text-[8px] uppercase tracking-wider px-1 py-0.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400">
+                              YOU
+                            </span>
+                          )}
+                        </div>
+                        <div className={`col-span-3 text-right font-mono text-[11px] font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {isPositive ? '+' : ''}${Math.abs(entry.highScore).toLocaleString()}
+                        </div>
+                        <div className="col-span-1 text-right font-mono text-[11px] text-slate-400">
+                          {entry.wins}
+                        </div>
+                        <div className="col-span-2 text-right font-mono text-[11px] text-slate-500">
+                          {entry.totalGames}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
 
         {/* Footer */}
-        <div className="mt-10 text-center font-mono text-[10px] text-slate-700">
+        <div className="mt-8 text-center font-mono text-[10px] text-slate-700">
           <span className="text-emerald-500/60">&#9679;</span> {games.length} VENTURE{games.length !== 1 ? 'S' : ''} TRACKED &middot; MARKET DATA LIVE
         </div>
       </div>
