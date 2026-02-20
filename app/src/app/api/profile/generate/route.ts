@@ -16,7 +16,7 @@ export async function POST() {
     try {
       const prompt = `Write a short 2-3 sentence professional bio for a fictional startup founder named ${user.email?.split('@')[0]}. Be creative:`;
       const response = await fetch(
-        'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3',
+        'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
         {
           method: 'POST',
           headers: {
