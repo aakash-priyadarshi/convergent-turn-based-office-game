@@ -69,6 +69,10 @@ interface FloorSectionProps {
 }
 
 function FloorSection({ title, count, icon, accentClass, badgeClass, cellClass }: FloorSectionProps) {
+  // Show a few empty desks so capacity / growth room is always visible.
+  const capacity = Math.max(count + 4, 8);
+  const empty = capacity - count;
+
   return (
     <div className={`rounded-lg border p-3 ${accentClass}`}>
       {/* Section header */}
@@ -81,30 +85,30 @@ function FloorSection({ title, count, icon, accentClass, badgeClass, cellClass }
         </span>
       </div>
 
-      {/* Desk grid */}
-      {count === 0 ? (
-        <div className="flex items-center justify-center h-16 rounded border border-dashed border-white/10">
-          <span className="font-mono text-[10px] text-slate-600">No staff</span>
-        </div>
-      ) : (
-        <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-10 gap-1.5">
-          {Array.from({ length: count }, (_, i) => (
-            <div
-              key={i}
-              className={`relative aspect-square rounded border flex items-center justify-center ${cellClass}`}
-            >
-              <Image
-                src={icon}
-                alt={title}
-                width={24}
-                height={24}
-                className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
-                unoptimized
-              />
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Desk grid — filled desks followed by empty placeholders */}
+      <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-10 gap-1.5">
+        {Array.from({ length: count }, (_, i) => (
+          <div
+            key={`filled-${i}`}
+            className={`relative aspect-square rounded border flex items-center justify-center ${cellClass}`}
+          >
+            <Image
+              src={icon}
+              alt={title}
+              width={24}
+              height={24}
+              className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+              unoptimized
+            />
+          </div>
+        ))}
+        {Array.from({ length: empty }, (_, i) => (
+          <div
+            key={`empty-${i}`}
+            className="relative aspect-square rounded border border-dashed border-white/10 flex items-center justify-center"
+          />
+        ))}
+      </div>
     </div>
   );
 }

@@ -109,6 +109,25 @@ Responsive: stacks vertically on mobile, 3-column grid on desktop.
 
 ---
 
+## Scope control
+
+Everything beyond the core loop is additive and non-blocking:
+
+- **Single mutation path** — only one endpoint (`/advance`) mutates game state. Bots, realtime, leaderboard, and AI bios are read-only or out-of-band.
+- **Graceful degradation** — if AI, realtime, or the bot tick is unavailable, the game is still fully playable with no code changes.
+- **No spec modifications** — extras layer on top of the spec model; they never alter the simulation formulas or initial state.
+- **Deliberate cuts** — no multiplayer competition, no undo/replay, no paid APIs. Each was considered and descoped.
+
+## Spec alignment notes
+
+Three places where my implementation interprets the spec:
+
+1. **Market factor** — a daily sine-wave multiplier (0.8–1.2×) on units sold. It defaults to 1.0, so when the cache is empty or stale the simulation matches the raw spec exactly.
+2. **Integer units** — the spec says units sold should be an integer. I use `Math.round()` on the computed value. `Math.floor()` would also be valid; rounding is closer to the arithmetic intent.
+3. **Competitors constant** — the spec mentions `competitors = 2` in the initial state. It is unused in any formula, so I omit it from the persisted game state rather than storing a dead column.
+
+---
+
 ## Getting Started
 
 ### Prerequisites

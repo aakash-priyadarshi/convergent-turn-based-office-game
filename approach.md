@@ -5,7 +5,7 @@ Reviewer summary:
 2) Deterministic, testable simulation engine
 3) Product judgement: tradeoffs + additive enhancements
 
-This repo started as a simple turn based business simulation, but I treated it like a real product slice. The assignment asks for a vertical slice where the client submits decisions, the server runs the model, state is persisted, and the dashboard updates. I built the core loop first and then added a few extras that demonstrate product judgment.
+This repo started as a simple turn based business simulation, but I treated it like a real product slice. The assignment asks for a vertical slice where the client submits decisions, the server runs the model, state is persisted and the dashboard updates. I built the core loop first and then added a few extras that demonstrate product judgment.
 
 ## What I built
 
@@ -42,9 +42,9 @@ Even in a single player game, double clicks and retries can happen. I used a ver
 ### Idempotency and retry safety
 This is not “strict idempotency” (two sequential successful calls will advance two quarters, by design). What I care about here is retry safety and not corrupting state under accidental duplicates.
 
-Double-click: in the UI I disable the submit button while a request is in flight, but I still assume two POSTs can land close together (double click, back button, etc). If both requests observe the same game version, only one update can succeed because the database update includes a version match. The loser gets a 409 conflict instead of silently overwriting.
+Double-click: in the UI I disable the submit button while a request is in flight, but I still assume two POSTs can land close together (double click, back button, etc). If both requests observe the same game version, only one update can succeed because the database update includes a version match. Here The loser gets a 409 conflict instead of silently overwriting.
 
-Network retry: if the client times out and retries, the retry either (a) hits the same version and wins (if the first never committed) or (b) hits a newer version and returns 409. Either way, the system does not attempt to merge two derived states.
+Network retry:- in this case if the client times out and retries, the retry either (a) hits the same version and wins (if the first never committed) or (b) hits a newer version and returns 409. Either way the system does not attempt to merge two derived states.
 
 Client refresh: refreshing the page is a clean reset. The client re-fetches the canonical game + turn history from the server. There is no client-side cache that can diverge permanently.
 
@@ -73,7 +73,12 @@ When realtime is unavailable (blocked websocket, flaky network, or subscription 
 I originally planned to rely on Vercel Cron to tick demo bot games in the background. On the hobby tier that is not something you can assume will always be available.
 
 Instead of fighting the platform, I made the demo bot mode explicitly “best-effort.” If the bot tick pauses, nothing breaks. Human-owned games still advance only when the owner clicks advance, and the simulation remains server-authoritative.
+### Why optional systems do not increase core complexity
+There is exactly one code path that mutates game state: the advance endpoint. It validates input, loads the game row, calls the pure simulation function, writes the result with optimistic locking, and appends a turn. Every other system in the project is either read-only or out-of-band.
 
+Bot advisors read the current state and return suggestions; they never write. The leaderboard aggregates completed games. Realtime broadcasts a notification after the advance has already committed. The market factor is fetched before the simulation runs, but it defaults to 1.0 if missing, so the advance path is never blocked by it.
+
+This means you can delete the bot, realtime, leaderboard, and AI bio code entirely and the core game loop does not change. I designed it this way on purpose so that extras demonstrate product judgment without adding risk to the spec-required functionality.
 ## Issues I hit and how I solved them
 
 ### Spec alignment on the simulation model
