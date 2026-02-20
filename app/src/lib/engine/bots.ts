@@ -5,6 +5,11 @@ type Strategy = 'cfo' | 'growth' | 'quality';
 /** CFO Bot: protect cash, slow hiring, mid-high price */
 function cfoStrategy(state: GameState): Decisions {
   const lowCash = state.cash < 300000;
+  const quartersLeft = (10 - state.current_year) * 4 + (4 - state.current_quarter);
+  // Late-game: freeze hiring, maximize revenue to survive
+  if (quartersLeft <= 4) {
+    return { price: 400, engineers_to_hire: 0, sales_to_hire: 0, salary_pct: 80 };
+  }
   return {
     price: lowCash ? 400 : 300,
     engineers_to_hire: lowCash ? 0 : state.engineers < 6 ? 1 : 0,
@@ -17,6 +22,11 @@ function cfoStrategy(state: GameState): Decisions {
 function growthStrategy(state: GameState): Decisions {
   const canAffordHiring = state.cash > 500000;
   const highCash = state.cash > 1200000;
+  const quartersLeft = (10 - state.current_year) * 4 + (4 - state.current_quarter);
+  // Late-game: stop hiring, coast to the finish
+  if (quartersLeft <= 6) {
+    return { price: 250, engineers_to_hire: 0, sales_to_hire: 0, salary_pct: 100 };
+  }
   return {
     price: highCash ? 150 : 200,
     engineers_to_hire: canAffordHiring ? 3 : 1,
@@ -28,6 +38,11 @@ function growthStrategy(state: GameState): Decisions {
 /** Quality Bot: high salary, engineer-heavy, premium pricing */
 function qualityStrategy(state: GameState): Decisions {
   const highQuality = Number(state.quality) > 70;
+  const quartersLeft = (10 - state.current_year) * 4 + (4 - state.current_quarter);
+  // Late-game: no more hiring, ride the premium pricing
+  if (quartersLeft <= 6) {
+    return { price: highQuality ? 500 : 400, engineers_to_hire: 0, sales_to_hire: 0, salary_pct: 100 };
+  }
   return {
     price: highQuality ? 500 : 400,
     engineers_to_hire: highQuality ? 1 : 2,
@@ -67,6 +82,8 @@ function generateReasoning(strategy: Strategy, state: GameState): string {
       return `With $${cash.toLocaleString()} in reserves, keep a balanced approach. Price at $300, hire conservatively (team: ${teamSize}), and protect margins at 90% salary.`;
 
     case 'growth':
+      if (quartersLeft <= 6)
+        return `${quartersLeft} quarters left — switching to survival mode. Stop hiring, price at $250 for steady revenue. The goal is to cross the Year 10 finish line with cash in the bank.`;
       if (cashLevel === 'critical')
         return `Cash too low for aggressive growth right now. Consider CFO strategy until reserves recover, then switch back to growth mode.`;
       if (cashLevel === 'strong')
@@ -76,6 +93,8 @@ function generateReasoning(strategy: Strategy, state: GameState): string {
       return `Scale aggressively with $${cash.toLocaleString()} available. Low pricing captures volume, hire fast (currently ${teamSize} staff). Speed beats perfection.`;
 
     case 'quality':
+      if (quartersLeft <= 6)
+        return `${quartersLeft} quarters to the finish. Freeze hiring and ride premium pricing at $${Number(quality) > 70 ? 500 : 400}. Quality at ${quality.toFixed(1)}% should carry us. Just survive.`;
       if (qualityLevel === 'poor')
         return `Quality at ${quality.toFixed(1)}% is hurting sales badly. Invest in 2 more engineers with 140% salary to attract top talent. Premium pricing follows quality.`;
       if (qualityLevel === 'excellent')
