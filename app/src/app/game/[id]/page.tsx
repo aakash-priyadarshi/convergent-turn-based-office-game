@@ -180,6 +180,7 @@ export default function GamePage() {
               <DecisionPanel
                 gameId={id}
                 disabled={isGameOver}
+                turnVersion={game.version}
                 onAdvance={handleAdvance}
               />
             ) : (

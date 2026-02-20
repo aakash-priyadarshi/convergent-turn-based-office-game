@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Decisions, BotRecommendation } from '@/lib/types';
 
 interface Props {
   gameId: string;
   disabled: boolean;
+  turnVersion: number; // changes each turn — triggers bot auto-refresh
   onAdvance: (decisions: Decisions) => Promise<void>;
 }
 
-export default function DecisionPanel({ gameId, disabled, onAdvance }: Props) {
+export default function DecisionPanel({ gameId, disabled, turnVersion, onAdvance }: Props) {
   const [price, setPrice] = useState(100);
   const [engineersToHire, setEngineersToHire] = useState(1);
   const [salesToHire, setSalesToHire] = useState(1);
@@ -19,7 +21,12 @@ export default function DecisionPanel({ gameId, disabled, onAdvance }: Props) {
   const [loadingBots, setLoadingBots] = useState(false);
   const [appliedStrategy, setAppliedStrategy] = useState<string | null>(null);
   const [applyFlash, setApplyFlash] = useState(false);
+  const [situationBrief, setSituationBrief] = useState<string>('');
+  const [showSituationAlert, setShowSituationAlert] = useState(false);
+  const [isNewTurnAlert, setIsNewTurnAlert] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const advisorRef = useRef<HTMLDivElement>(null);
+  const prevTurnVersion = useRef(turnVersion);
 
   // Clear the applied indicator after delay
   useEffect(() => {
@@ -36,20 +43,7 @@ export default function DecisionPanel({ gameId, disabled, onAdvance }: Props) {
     }
   }, [applyFlash]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    await onAdvance({
-      price,
-      engineers_to_hire: engineersToHire,
-      sales_to_hire: salesToHire,
-      salary_pct: salaryPct,
-    });
-    setSubmitting(false);
-    setAppliedStrategy(null);
-  }
-
-  async function fetchRecommendations() {
+  const fetchRecommendations = useCallback(async (isAutoRefresh = false) => {
     setLoadingBots(true);
     try {
       const res = await fetch(`/api/game/${gameId}/bot/recommend`, {
@@ -62,12 +56,58 @@ export default function DecisionPanel({ gameId, disabled, onAdvance }: Props) {
         console.error('Bot recommend error:', data.error);
         setRecommendations([]);
       } else {
-        setRecommendations(Array.isArray(data) ? data : [data]);
+        // New API format returns { recommendations, situationBrief }
+        const recs = data.recommendations || (Array.isArray(data) ? data : [data]);
+        setRecommendations(recs);
+        if (data.situationBrief) {
+          setSituationBrief(data.situationBrief);
+          if (isAutoRefresh) {
+            setShowSituationAlert(true);
+            setIsNewTurnAlert(true);
+          }
+        }
       }
     } catch (err) {
       console.error('Bot recommend fetch error:', err);
     }
     setLoadingBots(false);
+  }, [gameId]);
+
+  // Auto-fetch bot advice when turn changes
+  useEffect(() => {
+    if (turnVersion !== prevTurnVersion.current) {
+      prevTurnVersion.current = turnVersion;
+      // Turn changed — auto-refresh advice after a brief delay for dramatic effect
+      const t = setTimeout(() => {
+        fetchRecommendations(true);
+      }, 800);
+      return () => clearTimeout(t);
+    }
+  }, [turnVersion, fetchRecommendations]);
+
+  // Auto-dismiss situation alert
+  useEffect(() => {
+    if (showSituationAlert && isNewTurnAlert) {
+      const t = setTimeout(() => {
+        setIsNewTurnAlert(false);
+      }, 8000);
+      return () => clearTimeout(t);
+    }
+  }, [showSituationAlert, isNewTurnAlert]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setShowSituationAlert(false);
+    setIsNewTurnAlert(false);
+    await onAdvance({
+      price,
+      engineers_to_hire: engineersToHire,
+      sales_to_hire: salesToHire,
+      salary_pct: salaryPct,
+    });
+    setSubmitting(false);
+    setAppliedStrategy(null);
   }
 
   function applyRecommendation(rec: BotRecommendation) {
@@ -83,6 +123,43 @@ export default function DecisionPanel({ gameId, disabled, onAdvance }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Situation Alert Banner */}
+      <AnimatePresence>
+        {showSituationAlert && situationBrief && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            className={`rounded-xl border p-4 backdrop-blur-sm transition-all ${
+              isNewTurnAlert
+                ? 'border-amber-500/40 bg-amber-500/10 shadow-[0_0_25px_-5px_rgba(245,158,11,0.3)]'
+                : 'border-white/10 bg-white/5'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  {isNewTurnAlert && (
+                    <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  )}
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-amber-400 font-semibold">
+                    {isNewTurnAlert ? 'NEW QUARTER — SITUATION BRIEF' : 'SITUATION BRIEF'}
+                  </span>
+                </div>
+                <p className="font-mono text-[11px] text-slate-300 leading-relaxed">{situationBrief}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowSituationAlert(false); setIsNewTurnAlert(false); }}
+                className="font-mono text-[10px] text-slate-600 hover:text-slate-400 transition-colors cursor-pointer shrink-0 mt-0.5"
+              >
+                ✕
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <form
         ref={formRef}
         onSubmit={handleSubmit}
@@ -172,20 +249,36 @@ export default function DecisionPanel({ gameId, disabled, onAdvance }: Props) {
       </form>
 
       {/* Bot Advisor Panel */}
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5" data-tutorial="bot-advisors">
+      <div ref={advisorRef} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5" data-tutorial="bot-advisors">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-mono font-semibold text-sm text-white tracking-wider">BOT ADVISORS</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-mono font-semibold text-sm text-white tracking-wider">BOT ADVISORS</h2>
+            {isNewTurnAlert && recommendations.length > 0 && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400"
+              >
+                UPDATED
+              </motion.span>
+            )}
+          </div>
           <button
             type="button"
-            onClick={fetchRecommendations}
+            onClick={() => fetchRecommendations(false)}
             disabled={disabled || loadingBots}
             className="font-mono text-[10px] uppercase tracking-wider border border-white/10 bg-white/5 text-slate-400 px-3 py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-all disabled:opacity-50 cursor-pointer"
           >
-            {loadingBots ? 'ANALYZING...' : 'GET ADVICE'}
+            {loadingBots ? 'ANALYZING...' : 'REFRESH ADVICE'}
           </button>
         </div>
 
-        {recommendations.length === 0 ? (
+        {loadingBots && recommendations.length === 0 ? (
+          <div className="flex items-center gap-2 py-4 justify-center">
+            <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+            <span className="font-mono text-xs text-slate-500">Advisors analyzing new situation...</span>
+          </div>
+        ) : recommendations.length === 0 ? (
           <p className="font-mono text-xs text-slate-600">Request bot analysis for strategic recommendations</p>
         ) : (
           <div className="space-y-2">

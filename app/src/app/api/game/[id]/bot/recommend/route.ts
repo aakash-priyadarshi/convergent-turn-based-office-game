@@ -1,5 +1,5 @@
 import { requireAuth, json, errorResponse } from '@/lib/api-helpers';
-import { getAllRecommendations, getRecommendation } from '@/lib/engine/bots';
+import { getAllRecommendations, getRecommendation, assessSituation } from '@/lib/engine/bots';
 import { botRecommendSchema } from '@/lib/validation';
 import { NextRequest } from 'next/server';
 import type { GameState } from '@/lib/types';
@@ -32,9 +32,10 @@ export async function POST(
   const strategy = parsed.success ? parsed.data?.strategy : undefined;
 
   const state = game as GameState;
+  const situationBrief = assessSituation(state);
 
   if (strategy) {
-    return json(getRecommendation(strategy, state));
+    return json({ recommendation: getRecommendation(strategy, state), situationBrief });
   }
-  return json(getAllRecommendations(state));
+  return json({ recommendations: getAllRecommendations(state), situationBrief });
 }
