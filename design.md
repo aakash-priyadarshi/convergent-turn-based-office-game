@@ -55,6 +55,7 @@ Client (React 19 + Framer Motion)
 | GET | `/api/external/market-factor` | None | Read/refresh cached market factor |
 | POST | `/api/bots/tick` | Cron/manual | Advance demo bot game one quarter |
 | POST | `/api/profile/generate` | Required | Generate AI founder bio via HuggingFace |
+| GET | `/api/leaderboard` | None | Global leaderboard — top 20 players by best score |
 
 *Spectators can GET game state without being the owner (read-only).
 
@@ -81,15 +82,28 @@ Client (React 19 + Framer Motion)
 - **HuggingFace Inference API** — `zephyr-7b-beta` model for creative founder bios; template fallback on failure
 - **Personality-to-trait mapping** — converts answers into descriptive phrases for prompt engineering
 
-### Homepage & Founder Scorecard
+### Homepage — 3-Column Responsive Layout
 - **Auth-guarded dashboard** — redirects to `/login` if not authenticated
-- **Founder Scorecard** (two-column card, visible when games exist):
-  - **Left — High Score**: Best `cumulative_profit` across all games, win count, total ventures, best game progress (Y/Q)
-  - **Right — Founder's Story**: AI-generated bio or prompt to create one with link to profile page; founder name attribution
-- **"Launch New Venture" button** — creates game via POST `/api/game/new`
-- **Games list** — all user games sorted by `updated_at`, each showing Year/Quarter, color-coded status badge (active/won/lost), and cash amount
-- **Top bar** — display name + email, Profile link, Sign Out button
-- **Animated entry** — Framer Motion staggered fade-in for all elements
+- **Top bar** — display name + email (email hidden on mobile), Profile link, Sign Out button
+- **Responsive 3-column grid** (`lg:grid-cols-12`) — stacks vertically on mobile, side-by-side on desktop:
+
+**Left Column (3/12) — Player Scorecard:**
+- **High Score card** — best `cumulative_profit` across all games, win count, total games, best progress (Y/Q)
+- **Founder's Story card** — AI-generated bio with `line-clamp-6`, or prompt to create one with link to profile page; founder name attribution
+
+**Middle Column (5/12) — Ventures:**
+- **"+ Launch New Venture" button** — creates game via POST `/api/game/new`
+- **"Recent Ventures" section** with total count header
+- **Scrollable games list** (`max-h-[60vh]`) — all user games sorted by `updated_at`, each showing Year/Quarter, color-coded status badge (active/won/lost), and cash amount
+
+**Right Column (4/12) — Global Leaderboard:**
+- **🏆 Leaderboard header** with founder count
+- **Ranked table** (top 20) — rank (🥇🥈🥉 for top 3), founder name, high score (green/red), wins (W), games played (GP)
+- **Current player highlighted** with blue left border + "YOU" badge
+- **Sticky column headers** with scrollable rows (`max-h-[60vh]`)
+- **API endpoint** `GET /api/leaderboard` — aggregates all players' best scores using service client + auth admin for display names
+
+- **Animated entry** — Framer Motion staggered fade-in with directional slide (left/up/right per column)
 - **Bio refresh on onboarding complete** — scorecard updates without page reload
 
 ### Game Dashboard
@@ -238,7 +252,7 @@ Framework: **Vitest** with TypeScript
 
 ## Descopes & Non-Goals
 
-- No multiplayer competitive mode (single-player sim with spectator support)
+- No head-to-head multiplayer (single-player sim with spectator support + global leaderboard)
 - No chat interface
 - No Redis — Postgres cache is sufficient at this scale
 - No microservices — single Next.js app
