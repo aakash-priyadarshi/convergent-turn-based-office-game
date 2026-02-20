@@ -1,26 +1,50 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Background from '@/components/login/Background';
 import GlitchWrapper from '@/components/login/GlitchWrapper';
 import MarketTicker from '@/components/login/MarketTicker';
 import ScrambleButton from '@/components/login/ScrambleButton';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [emailHint, setEmailHint] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
+  const validateEmail = useCallback((val: string) => {
+    if (!val) {
+      setEmailHint('');
+      return false;
+    }
+    if (!EMAIL_RE.test(val)) {
+      setEmailHint('Invalid email format — check for typos');
+      return false;
+    }
+    setEmailHint('');
+    return true;
+  }, []);
+
+  function handleEmailChange(val: string) {
+    setEmail(val);
+    if (val.length > 3) validateEmail(val);
+    else setEmailHint('');
+  }
+
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    if (!validateEmail(email.trim())) return;
+
     setLoading(true);
     setError('');
     setSuccess('');
@@ -31,8 +55,11 @@ export default function SignupPage() {
     });
 
     if (authError) {
-      if (authError.message.includes('already registered')) {
-        setError('This email is already registered. Try signing in instead.');
+      if (
+        authError.message.includes('already registered') ||
+        authError.message.includes('already been registered')
+      ) {
+        setError('This email is already registered.');
       } else {
         setError(authError.message);
       }
@@ -40,15 +67,21 @@ export default function SignupPage() {
       return;
     }
 
-    // If Supabase requires email confirmation, session will be null
+    // Supabase returns a fake user with no session for already-registered emails
+    // when "Confirm email" is on. Check for identities to detect this.
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      setError('This email is already registered.');
+      setLoading(false);
+      return;
+    }
+
     if (data.session) {
       // Auto-confirmed — go straight to dashboard
       router.push('/');
       router.refresh();
     } else {
-      // Email confirmation required
       setSuccess(
-        'Account created! Check your inbox for a confirmation link, then sign in.'
+        'Entity registered! Check your inbox for the confirmation link, then sign in.'
       );
       setLoading(false);
     }
@@ -91,35 +124,49 @@ export default function SignupPage() {
             </motion.p>
           </div>
 
-          {/* Error */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-400"
-            >
-              <span className="mr-2 text-red-500">&#9632;</span>
-              {error}
-            </motion.div>
-          )}
+          {/* Error — with login redirect for existing emails */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-400"
+              >
+                <span className="mr-2 text-red-500">&#9632;</span>
+                {error}
+                {error.includes('already registered') && (
+                  <Link
+                    href="/login"
+                    className="mt-2 block text-center font-semibold text-blue-400 hover:text-blue-300"
+                  >
+                    Bootstrap Session Instead &rarr;
+                  </Link>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Success */}
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-mono text-xs text-emerald-400"
-            >
-              <span className="mr-2 text-emerald-500">&#10003;</span>
-              {success}
-              <Link
-                href="/login"
-                className="mt-2 block text-center font-semibold text-blue-400 hover:text-blue-300"
+          <AnimatePresence>
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-mono text-xs text-emerald-400"
               >
-                Go to Sign In &rarr;
-              </Link>
-            </motion.div>
-          )}
+                <span className="mr-2 text-emerald-500">&#10003;</span>
+                {success}
+                <Link
+                  href="/login"
+                  className="mt-2 block text-center font-semibold text-blue-400 hover:text-blue-300"
+                >
+                  Go to Sign In &rarr;
+                </Link>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Form */}
           {!success && (
@@ -132,11 +179,21 @@ export default function SignupPage() {
                   type="email"
                   placeholder="ceo@startup.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-slate-900/50 px-4 py-3 font-mono text-sm text-white placeholder-slate-600 outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  onBlur={() => validateEmail(email)}
+                  className={`w-full rounded-lg border bg-slate-900/50 px-4 py-3 font-mono text-sm text-white placeholder-slate-600 outline-none transition-all focus:ring-2 ${
+                    emailHint
+                      ? 'border-amber-500/50 focus:ring-amber-500/20'
+                      : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/20'
+                  }`}
                   required
                   autoComplete="email"
                 />
+                {emailHint && (
+                  <p className="mt-1.5 ml-1 font-mono text-[10px] text-amber-400">
+                    &#9888; {emailHint}
+                  </p>
+                )}
               </div>
 
               <div>

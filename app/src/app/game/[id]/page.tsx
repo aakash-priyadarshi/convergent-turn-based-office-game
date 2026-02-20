@@ -10,6 +10,7 @@ import TurnHistory from '@/components/TurnHistory';
 import OfficeSvg from '@/components/OfficeSvg';
 import PresenceFeed from '@/components/PresenceFeed';
 import Link from 'next/link';
+import Background from '@/components/login/Background';
 
 export default function GamePage() {
   const { id } = useParams<{ id: string }>();
@@ -61,14 +62,18 @@ export default function GamePage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading game…</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="font-mono text-sm text-slate-400 animate-pulse">Loading simulation...</div>
+      </div>
+    );
   }
 
   if (error && !game) {
     return (
-      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
-        <p className="text-red-500">{error}</p>
-        <Link href="/" className="text-blue-600 hover:underline">← Back to games</Link>
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4 bg-slate-950">
+        <p className="font-mono text-sm text-red-400">{error}</p>
+        <Link href="/" className="font-mono text-xs text-blue-400 hover:text-blue-300">&larr; Back to ventures</Link>
       </div>
     );
   }
@@ -78,77 +83,91 @@ export default function GamePage() {
   const isGameOver = game.status !== 'active';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top bar */}
-      <div className="border-b bg-white px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-gray-400 hover:text-gray-600">← Games</Link>
-            <h1 className="font-bold text-lg">
-              Y{game.current_year} Q{game.current_quarter}
-            </h1>
-            {!isOwner && (
-              <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
-                Spectator
-              </span>
+    <div className="relative min-h-screen">
+      <Background />
+
+      <div className="relative z-10">
+        {/* Top bar */}
+        <div className="border-b border-white/10 bg-slate-950/80 backdrop-blur-md px-4 py-3">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link href="/" className="font-mono text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                &larr; VENTURES
+              </Link>
+              <h1 className="font-mono font-bold text-white">
+                Y{game.current_year} Q{game.current_quarter}
+              </h1>
+              {!isOwner && (
+                <span className="font-mono text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400">
+                  Spectator
+                </span>
+              )}
+            </div>
+            <PresenceFeed gameId={id} onUpdate={loadGame} />
+          </div>
+        </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="max-w-6xl mx-auto px-4 mt-3">
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 font-mono text-xs text-red-400">
+              <span className="mr-2">&#9632;</span>{error}
+            </div>
+          </div>
+        )}
+
+        {/* Win/lose banner */}
+        {isGameOver && (
+          <div className={`text-center py-8 ${
+            game.status === 'won'
+              ? 'bg-emerald-500/5 border-b border-emerald-500/20'
+              : 'bg-red-500/5 border-b border-red-500/20'
+          }`}>
+            <h2 className={`text-3xl font-bold font-mono tracking-tight ${
+              game.status === 'won' ? 'text-emerald-400' : 'text-red-400'
+            }`}>
+              {game.status === 'won' ? 'VENTURE SUCCESSFUL' : 'VENTURE BANKRUPT'}
+            </h2>
+            <p className="font-mono text-xs text-slate-400 mt-2">
+              {game.status === 'won'
+                ? `Reached $${Number(game.cumulative_profit).toLocaleString()} cumulative profit`
+                : 'Company ran out of operating capital'}
+            </p>
+            <Link
+              href="/"
+              className="inline-block mt-4 font-mono text-xs text-blue-400 hover:text-blue-300 border border-blue-500/30 bg-blue-500/10 px-4 py-2 rounded-lg transition-all hover:bg-blue-500/20"
+            >
+              LAUNCH NEW VENTURE &rarr;
+            </Link>
+          </div>
+        )}
+
+        {/* Main layout */}
+        <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: decisions + bots */}
+          <div className="lg:col-span-1">
+            {isOwner ? (
+              <DecisionPanel
+                gameId={id}
+                disabled={isGameOver}
+                onAdvance={handleAdvance}
+              />
+            ) : (
+              <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+                <h2 className="font-mono font-semibold text-white text-sm mb-2">SPECTATING</h2>
+                <p className="font-mono text-xs text-slate-500">
+                  You are observing this venture in read-only mode. The founder makes all decisions.
+                </p>
+              </div>
             )}
           </div>
-          <PresenceFeed gameId={id} onUpdate={loadGame} />
-        </div>
-      </div>
 
-      {error && (
-        <div className="max-w-6xl mx-auto px-4 mt-2">
-          <p className="text-red-500 text-sm bg-red-50 p-2 rounded">{error}</p>
-        </div>
-      )}
-
-      {/* Win/lose banner */}
-      {isGameOver && (
-        <div className={`text-center py-6 ${
-          game.status === 'won' ? 'bg-blue-50' : 'bg-red-50'
-        }`}>
-          <h2 className={`text-3xl font-bold ${
-            game.status === 'won' ? 'text-blue-600' : 'text-red-600'
-          }`}>
-            {game.status === 'won' ? '🎉 You Won!' : '💸 Bankrupt!'}
-          </h2>
-          <p className="text-gray-500 mt-1">
-            {game.status === 'won'
-              ? `Reached $${game.cumulative_profit.toLocaleString()} cumulative profit!`
-              : 'Your company ran out of cash.'}
-          </p>
-          <Link href="/" className="inline-block mt-3 text-blue-600 hover:underline">
-            Start a new game →
-          </Link>
-        </div>
-      )}
-
-      {/* Main layout */}
-      <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: decisions + bots */}
-        <div className="lg:col-span-1">
-          {isOwner ? (
-            <DecisionPanel
-              gameId={id}
-              disabled={isGameOver}
-              onAdvance={handleAdvance}
-            />
-          ) : (
-            <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="font-semibold mb-2">Spectating</h2>
-              <p className="text-sm text-gray-500">
-                You are watching this game in read-only mode. The owner makes all decisions.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Right: KPIs, history, office */}
-        <div className="lg:col-span-2 space-y-4">
-          <KpiCards game={game} />
-          <OfficeSvg engineers={game.engineers} sales={game.sales} />
-          <TurnHistory turns={turns} />
+          {/* Right: KPIs, history, office */}
+          <div className="lg:col-span-2 space-y-4">
+            <KpiCards game={game} />
+            <OfficeSvg engineers={game.engineers} sales={game.sales} />
+            <TurnHistory turns={turns} />
+          </div>
         </div>
       </div>
     </div>

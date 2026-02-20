@@ -1,27 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Background from '@/components/login/Background';
 import GlitchWrapper from '@/components/login/GlitchWrapper';
 import MarketTicker from '@/components/login/MarketTicker';
 import ScrambleButton from '@/components/login/ScrambleButton';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [emailHint, setEmailHint] = useState('');
+  const [welcome, setWelcome] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
+  const validateEmail = useCallback((val: string) => {
+    if (!val) {
+      setEmailHint('');
+      return false;
+    }
+    if (!EMAIL_RE.test(val)) {
+      setEmailHint('Invalid email format — check for typos');
+      return false;
+    }
+    setEmailHint('');
+    return true;
+  }, []);
+
+  function handleEmailChange(val: string) {
+    setEmail(val);
+    if (val.length > 3) validateEmail(val);
+    else setEmailHint('');
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (!validateEmail(email.trim())) return;
+
     setLoading(true);
     setError('');
+    setWelcome('');
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
@@ -29,18 +55,27 @@ export default function LoginPage() {
     });
 
     if (authError) {
-      // Friendly error messages
-      if (authError.message.includes('Invalid login credentials')) {
-        setError('Invalid email or password. Did you confirm your email after signup?');
+      if (
+        authError.message.includes('Invalid login credentials') ||
+        authError.message.includes('invalid_credentials')
+      ) {
+        setError(
+          'No account found with these credentials. Check your email/password or register a new entity.'
+        );
       } else if (authError.message.includes('Email not confirmed')) {
-        setError('Please check your inbox and confirm your email before signing in.');
+        setError(
+          'Email not yet confirmed. Check your inbox for the verification link.'
+        );
       } else {
         setError(authError.message);
       }
       setLoading(false);
     } else {
-      router.push('/');
-      router.refresh();
+      setWelcome('Welcome back, Founder!');
+      setTimeout(() => {
+        router.push('/');
+        router.refresh();
+      }, 1200);
     }
   }
 
@@ -81,17 +116,42 @@ export default function LoginPage() {
             </motion.p>
           </div>
 
+          {/* Welcome toast */}
+          <AnimatePresence>
+            {welcome && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center font-mono text-sm text-emerald-400"
+              >
+                <span className="mr-2">&#10003;</span>{welcome}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Error */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-400"
-            >
-              <span className="mr-2 text-red-500">&#9632;</span>
-              {error}
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {error && !welcome && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-400"
+              >
+                <span className="mr-2 text-red-500">&#9632;</span>
+                {error}
+                {error.includes('register') && (
+                  <Link
+                    href="/signup"
+                    className="mt-2 block text-center font-semibold text-blue-400 hover:text-blue-300"
+                  >
+                    Register Entity &rarr;
+                  </Link>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-5">
@@ -103,11 +163,21 @@ export default function LoginPage() {
                 type="email"
                 placeholder="ceo@startup.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-slate-900/50 px-4 py-3 font-mono text-sm text-white placeholder-slate-600 outline-none transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                onChange={(e) => handleEmailChange(e.target.value)}
+                onBlur={() => validateEmail(email)}
+                className={`w-full rounded-lg border bg-slate-900/50 px-4 py-3 font-mono text-sm text-white placeholder-slate-600 outline-none transition-all focus:ring-2 ${
+                  emailHint
+                    ? 'border-amber-500/50 focus:ring-amber-500/20'
+                    : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/20'
+                }`}
                 required
                 autoComplete="email"
               />
+              {emailHint && (
+                <p className="mt-1.5 ml-1 font-mono text-[10px] text-amber-400">
+                  &#9888; {emailHint}
+                </p>
+              )}
             </div>
 
             <div>

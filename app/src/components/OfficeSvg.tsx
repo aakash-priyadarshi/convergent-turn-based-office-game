@@ -27,12 +27,12 @@ export default function OfficeSvg({ engineers, sales, maxDesks = 30 }: Props) {
   const colors = {
     engineer: '#3B82F6',
     sales: '#10B981',
-    empty: '#E5E7EB',
+    empty: '#334155',
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <h2 className="font-semibold mb-2">Office</h2>
+    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+      <h2 className="font-mono font-semibold text-sm text-white tracking-wider mb-3">OFFICE FLOOR</h2>
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="w-full"
@@ -40,7 +40,7 @@ export default function OfficeSvg({ engineers, sales, maxDesks = 30 }: Props) {
         aria-label={`Office with ${engineers} engineers and ${sales} sales people`}
       >
         {/* Floor */}
-        <rect x={0} y={0} width={width} height={height - 28} rx={4} fill="#F9FAFB" stroke="#E5E7EB" />
+        <rect x={0} y={0} width={width} height={height - 28} rx={6} fill="#0f172a" stroke="#1e293b" />
 
         {desks.map((desk) => {
           const col = desk.index % COLS;
@@ -57,7 +57,7 @@ export default function OfficeSvg({ engineers, sales, maxDesks = 30 }: Props) {
                 height={DESK_SIZE}
                 rx={4}
                 fill={colors[desk.type]}
-                opacity={desk.type === 'empty' ? 0.4 : 0.85}
+                opacity={desk.type === 'empty' ? 0.3 : 0.85}
               />
               {desk.type !== 'empty' && (
                 <text
@@ -77,13 +77,13 @@ export default function OfficeSvg({ engineers, sales, maxDesks = 30 }: Props) {
 
         {/* Legend */}
         <rect x={GAP} y={height - 24} width={12} height={12} rx={2} fill={colors.engineer} />
-        <text x={GAP + 16} y={height - 14} fontSize={10} fill="#6B7280">Eng ({engineers})</text>
+        <text x={GAP + 16} y={height - 14} fontSize={10} fill="#94a3b8" fontFamily="monospace">Eng ({engineers})</text>
 
         <rect x={GAP + 80} y={height - 24} width={12} height={12} rx={2} fill={colors.sales} />
-        <text x={GAP + 96} y={height - 14} fontSize={10} fill="#6B7280">Sales ({sales})</text>
+        <text x={GAP + 96} y={height - 14} fontSize={10} fill="#94a3b8" fontFamily="monospace">Sales ({sales})</text>
 
-        <rect x={GAP + 160} y={height - 24} width={12} height={12} rx={2} fill={colors.empty} opacity={0.4} />
-        <text x={GAP + 176} y={height - 14} fontSize={10} fill="#6B7280">Empty ({Math.max(0, maxDesks - engineers - sales)})</text>
+        <rect x={GAP + 160} y={height - 24} width={12} height={12} rx={2} fill={colors.empty} opacity={0.3} />
+        <text x={GAP + 176} y={height - 14} fontSize={10} fill="#94a3b8" fontFamily="monospace">Empty ({Math.max(0, maxDesks - engineers - sales)})</text>
       </svg>
     </div>
   );
