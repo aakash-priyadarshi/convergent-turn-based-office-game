@@ -7,14 +7,16 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import type { GameState } from '@/lib/types';
 import Background from '@/components/login/Background';
+import OnboardingModal from '@/components/OnboardingModal';
 
 export default function HomePage() {
   const supabase = createClient();
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; email?: string; user_metadata?: Record<string, unknown> } | null>(null);
   const [games, setGames] = useState<GameState[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -24,6 +26,17 @@ export default function HomePage() {
         return;
       }
       setUser(user);
+
+      // Check if user needs onboarding (no bio = first time)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('founder_bio')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.founder_bio && !user.user_metadata?.display_name) {
+        setShowOnboarding(true);
+      }
 
       const { data } = await supabase
         .from('games')
@@ -62,6 +75,11 @@ export default function HomePage() {
     <div className="relative min-h-screen">
       <Background />
 
+      {/* Onboarding modal for first-time users */}
+      {showOnboarding && (
+        <OnboardingModal onComplete={() => setShowOnboarding(false)} />
+      )}
+
       <div className="relative z-10 max-w-3xl mx-auto px-6 py-10">
         {/* Top bar */}
         <motion.div
@@ -74,8 +92,18 @@ export default function HomePage() {
               STARTUP<span className="text-blue-500">.</span>SIM
             </h1>
             <p className="mt-1 font-mono text-xs text-slate-500">
-              <span className="text-emerald-500/60">&#9679;</span> Logged in as{' '}
-              <span className="text-slate-400">{user?.email}</span>
+              <span className="text-emerald-500/60">&#9679;</span>{' '}
+              {user?.user_metadata?.display_name ? (
+                <>
+                  <span className="text-slate-300">{String(user.user_metadata.display_name)}</span>
+                  <span className="text-slate-600"> &middot; </span>
+                  <span className="text-slate-500">{user?.email}</span>
+                </>
+              ) : (
+                <>
+                  Logged in as <span className="text-slate-400">{user?.email}</span>
+                </>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-3">

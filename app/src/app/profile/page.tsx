@@ -11,6 +11,7 @@ import ScrambleButton from '@/components/login/ScrambleButton';
 export default function ProfilePage() {
   const supabase = createClient();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [displayName, setDisplayName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
 
@@ -18,6 +19,11 @@ export default function ProfilePage() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Get display name from user metadata
+      setDisplayName(
+        (user.user_metadata?.display_name as string) || ''
+      );
 
       const { data } = await supabase
         .from('profiles')
@@ -34,7 +40,13 @@ export default function ProfilePage() {
   async function generateProfile() {
     setGenerating(true);
     try {
-      const res = await fetch('/api/profile/generate', { method: 'POST' });
+      const res = await fetch('/api/profile/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: displayName || undefined,
+        }),
+      });
       const data = await res.json();
       if (data.bio) {
         setProfile((prev) => prev ? { ...prev, founder_bio: data.bio } : prev);
@@ -79,6 +91,18 @@ export default function ProfilePage() {
           <div className="h-0.5 w-12 bg-gradient-to-r from-blue-500 to-emerald-500 mb-6" />
 
           <div className="space-y-5">
+            {/* Display Name */}
+            {displayName && (
+              <div>
+                <label className="mb-1 block text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-500">
+                  Founder Name
+                </label>
+                <p className="font-mono text-sm text-white bg-slate-900/50 rounded-lg border border-white/10 px-4 py-2.5">
+                  {displayName}
+                </p>
+              </div>
+            )}
+
             {/* Email */}
             <div>
               <label className="mb-1 block text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-500">
@@ -110,6 +134,8 @@ export default function ProfilePage() {
               label={profile?.founder_bio ? 'REGENERATE BIO' : 'GENERATE FOUNDER BIO'}
               loadingLabel="SYNTHESIZING..."
               loading={generating}
+              type="button"
+              onClick={generateProfile}
             />
             <p className="text-center font-mono text-[10px] text-slate-600 -mt-2">
               Powered by AI &middot; HuggingFace Inference

@@ -15,7 +15,7 @@ export default function KpiCards({ game }: Props) {
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-3 gap-3" data-tutorial="kpi-cards">
       {cards.map((c) => (
         <div key={c.label} className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-center">
           <div className="font-mono text-[10px] uppercase tracking-wider text-slate-500">{c.label}</div>

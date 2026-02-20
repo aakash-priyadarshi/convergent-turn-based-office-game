@@ -9,6 +9,7 @@ import KpiCards from '@/components/KpiCards';
 import TurnHistory from '@/components/TurnHistory';
 import OfficeSvg from '@/components/OfficeSvg';
 import PresenceFeed from '@/components/PresenceFeed';
+import GameTutorial from '@/components/GameTutorial';
 import Link from 'next/link';
 import Background from '@/components/login/Background';
 
@@ -21,6 +22,7 @@ export default function GamePage() {
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const loadGame = useCallback(async () => {
     const res = await fetch(`/api/game/${id}`);
@@ -43,6 +45,23 @@ export default function GamePage() {
   useEffect(() => {
     loadGame();
   }, [loadGame]);
+
+  // Auto-show tutorial for first-time players
+  useEffect(() => {
+    if (!loading && game && isOwner) {
+      const tutorialDone = localStorage.getItem('tutorial_completed');
+      if (!tutorialDone) {
+        // Slight delay to let the DOM render data-tutorial elements
+        const t = setTimeout(() => setShowTutorial(true), 500);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [loading, game, isOwner]);
+
+  function completeTutorial() {
+    localStorage.setItem('tutorial_completed', '1');
+    setShowTutorial(false);
+  }
 
   async function handleAdvance(decisions: Decisions) {
     const res = await fetch(`/api/game/${id}/advance`, {
@@ -86,6 +105,9 @@ export default function GamePage() {
     <div className="relative min-h-screen">
       <Background />
 
+      {/* Tutorial overlay */}
+      {showTutorial && <GameTutorial onComplete={completeTutorial} />}
+
       <div className="relative z-10">
         {/* Top bar */}
         <div className="border-b border-white/10 bg-slate-950/80 backdrop-blur-md px-4 py-3">
@@ -103,7 +125,15 @@ export default function GamePage() {
                 </span>
               )}
             </div>
-            <PresenceFeed gameId={id} onUpdate={loadGame} />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowTutorial(true)}
+                className="font-mono text-[10px] uppercase tracking-wider border border-white/10 bg-white/5 text-slate-500 px-3 py-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+              >
+                ? HOW TO PLAY
+              </button>
+              <PresenceFeed gameId={id} onUpdate={loadGame} />
+            </div>
           </div>
         </div>
 

@@ -7,7 +7,7 @@ interface Props {
 export default function TurnHistory({ turns }: Props) {
   if (turns.length === 0) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5" data-tutorial="turn-history">
         <h2 className="font-mono font-semibold text-sm text-white tracking-wider mb-2">RECENT QUARTERS</h2>
         <p className="font-mono text-xs text-slate-600">No turns yet — make your first decision</p>
       </div>
@@ -15,7 +15,7 @@ export default function TurnHistory({ turns }: Props) {
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5" data-tutorial="turn-history">
       <h2 className="font-mono font-semibold text-sm text-white tracking-wider mb-3">LAST 4 QUARTERS</h2>
       <div className="space-y-2">
         {turns.map((t) => (

@@ -14,12 +14,14 @@ export default function ScrambleButton({
   loading,
   disabled,
   type = 'submit',
+  onClick,
 }: {
   label: string;
   loadingLabel: string;
   loading: boolean;
   disabled?: boolean;
   type?: 'submit' | 'button';
+  onClick?: () => void;
 }) {
   const [display, setDisplay] = useState(label);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -60,6 +62,7 @@ export default function ScrambleButton({
     <button
       type={type}
       disabled={disabled || loading}
+      onClick={onClick}
       className="group relative w-full overflow-hidden rounded-lg bg-blue-600 py-3.5 font-mono font-bold tracking-wider text-white transition-all hover:bg-blue-500 hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.5)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
     >
       <span className="relative z-10">{display}</span>

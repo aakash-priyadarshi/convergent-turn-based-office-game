@@ -31,7 +31,7 @@ export default function OfficeSvg({ engineers, sales, maxDesks = 30 }: Props) {
   };
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-5" data-tutorial="office-floor">
       <h2 className="font-mono font-semibold text-sm text-white tracking-wider mb-3">OFFICE FLOOR</h2>
       <svg
         viewBox={`0 0 ${width} ${height}`}
