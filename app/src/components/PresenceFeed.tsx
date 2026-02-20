@@ -14,7 +14,7 @@ interface Props {
  * Uses Supabase Realtime channels; falls back to polling if unavailable.
  */
 export default function PresenceFeed({ gameId, onUpdate }: Props) {
-  const [presenceCount, setPresenceCount] = useState(1);
+  const [presenceCount, setPresenceCount] = useState(0);
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [connected, setConnected] = useState(false);
 
@@ -31,7 +31,8 @@ export default function PresenceFeed({ gameId, onUpdate }: Props) {
       channel
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
-          setPresenceCount(Object.keys(state).length);
+          // Subtract 1 to exclude the current player (they are the owner, not a viewer)
+          setPresenceCount(Math.max(0, Object.keys(state).length - 1));
         })
         .on('broadcast', { event: 'quarter_advanced' }, (payload) => {
           const event: ActivityEvent = {
@@ -79,7 +80,7 @@ export default function PresenceFeed({ gameId, onUpdate }: Props) {
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' : 'bg-amber-500'}`} />
           <span className="font-mono text-xs font-medium text-slate-300">
-            {presenceCount} {presenceCount === 1 ? 'viewer' : 'viewers'}
+            {presenceCount === 0 ? 'You' : `You + ${presenceCount} ${presenceCount === 1 ? 'spectator' : 'spectators'}`}
           </span>
         </div>
         <span className="font-mono text-[10px] uppercase tracking-wider text-slate-600">
