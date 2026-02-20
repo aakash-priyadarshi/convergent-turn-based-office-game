@@ -1,6 +1,6 @@
 # STARTUP.SIM — Turn-Based Startup Simulation
 
-A full-stack turn-based business simulation game where you play as a startup founder making quarterly decisions on pricing, hiring, and salaries to hit $50K cumulative profit before running out of cash.
+A full-stack turn-based business simulation game where you play as a startup founder making quarterly decisions on pricing, hiring, and salaries across 10 years (40 quarters). Survive to Year 10 with positive cash to win.
 
 **Live:** [convergent-turn-based-office-game.vercel.app](https://convergent-turn-based-office-game-aakash-priyadarshis-projects.vercel.app)
 
@@ -10,8 +10,8 @@ A full-stack turn-based business simulation game where you play as a startup fou
 
 ### Gameplay
 - **Quarterly decision-making** — set product price, hire engineers & sales, adjust salary competitiveness
-- **Deterministic simulation engine** — revenue, costs, quality drift, and market factors calculated each quarter
-- **Win condition**: reach $50,000 cumulative profit | **Lose condition**: go bankrupt (cash ≤ $0)
+- **Deterministic simulation engine** — implements the spec model as-provided (see Simulation Model below)
+- **Win condition**: survive 10 years with positive cash | **Lose condition**: go bankrupt (cash ≤ $0)
 - **Market factor system** — daily sine-wave variation (0.8–1.2×) cached with SWR pattern
 
 ### AI Bot Advisors
@@ -40,7 +40,7 @@ Responsive: stacks vertically on mobile, 3-column grid on desktop.
 - **Profile page** — view/regenerate bio with ScrambleButton animation
 
 ### Game Dashboard
-- **KPI cards** — Cash, Quality, Engineers, Sales, Cumulative Profit, Period
+- **KPI cards** — Cash, Revenue, Net Income, Quality, Engineers, Sales, Cumulative Profit, Period
 - **Office floor SVG** — 30 desks color-coded by role (engineers/sales/empty)
 - **Turn history** — last 4 quarters with revenue, costs, profit breakdown
 - **Spectator mode** — anyone with the game link can watch in read-only
@@ -190,6 +190,7 @@ app/
 
 ## Architecture Decisions
 
+- **Spec model as-provided** — simulation uses the exact formulas from the assignment spec (`quality += engineers * 0.5`, `demand = quality * 10 - price * 0.0001`, etc.) with no constant modifications
 - **Optimistic locking** — `games.version` column prevents double-advances
 - **Pure simulation engine** — `advanceQuarter()` is a pure function with no side effects; deterministic and testable
 - **RLS everywhere** — Supabase Row-Level Security on all 5 tables; writes restricted to owner, reads open for spectators
@@ -199,6 +200,51 @@ app/
 
 ---
 
-## License
+## Simulation Model
 
-MIT
+The model is implemented exactly as specified in the assignment:
+
+| Variable | Formula |
+|----------|--------|
+| Initial cash | $1,000,000 |
+| Initial engineers | 4 |
+| Initial sales | 2 |
+| Initial quality | 50 |
+| Salary cost / person | `salary_pct / 100 * 30,000` |
+| Product quality | `quality += engineers * 0.5` (cap 100) |
+| Market demand | `quality * 10 - price * 0.0001` (floor 0) |
+| Units sold | `demand * sales_staff * 0.5` (integer) |
+| Revenue | `price * units` |
+| Total payroll | `salary_cost * (engineers + sales)` |
+| Net income | `revenue - total_payroll` |
+| Cash | `cash + net_income - hiring_cost` |
+| New hire cost | `new_hires * 5,000` one-time |
+
+**Win**: Survive through Year 10 (40 quarters) with positive cash.  
+**Lose**: Cash reaches $0 or below.
+
+No constants have been adjusted from the spec. The `marketFactor` (daily sine-wave 0.8–1.2× on units sold) is an enhancement, not a spec modification.
+
+---
+
+## Tradeoffs & Descopes
+
+**What was built beyond the spec:**
+- Bot advisors (3 deterministic strategies with context-aware reasoning)
+- Realtime spectator mode with presence tracking
+- AI-generated founder bios (HuggingFace free tier)
+- Global leaderboard
+- Interactive 7-step tutorial
+- Animated dark-theme UI with framer-motion
+- Market factor system (SWR-cached daily variation)
+
+**What was cut:**
+- Multi-player mode — only single-player + spectators (no simultaneous competing founders)
+- Replay / time-travel — turn history is read-only, no undo
+- Mobile-optimized touch targets — responsive layout works on mobile but inputs are desktop-sized
+- Comprehensive error recovery UI — basic error banners only, no retry logic on failed advances
+
+**Known issues:**
+- The spec’s price coefficient (0.0001) makes price essentially irrelevant to demand; the game is very easy to win by setting high prices. This is the spec model as-provided.
+- Leaderboard fetches user metadata one-by-one (N+1); acceptable for the top-20 ceiling
+- New games require running the migration SQL manually in Supabase Dashboard

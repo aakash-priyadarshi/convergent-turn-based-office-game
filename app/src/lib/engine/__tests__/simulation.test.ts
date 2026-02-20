@@ -9,10 +9,10 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     status: 'active',
     current_year: 1,
     current_quarter: 1,
-    cash: 10000,
+    cash: 1000000,
     quality: 50,
-    engineers: 2,
-    sales: 1,
+    engineers: 4,
+    sales: 2,
     cumulative_profit: 0,
     version: 0,
     created_at: '',
@@ -33,8 +33,8 @@ describe('advanceQuarter', () => {
     const { newState, outcomes } = advanceQuarter(makeState(), defaultDecisions);
     expect(outcomes.revenue).toBeGreaterThanOrEqual(0);
     expect(outcomes.costs).toBeGreaterThan(0);
-    expect(outcomes.new_engineers).toBe(3);
-    expect(outcomes.new_sales).toBe(2);
+    expect(outcomes.new_engineers).toBe(5);
+    expect(outcomes.new_sales).toBe(3);
     expect(newState.current_quarter).toBe(2);
   });
 
@@ -46,30 +46,40 @@ describe('advanceQuarter', () => {
   });
 
   it('detects bankruptcy when cash goes to zero', () => {
-    const state = makeState({ cash: 100 }); // very low cash
+    const state = makeState({ cash: 10000 }); // very low cash for $30k salaries
     const decisions: Decisions = {
       price: 1,
-      engineers_to_hire: 10,
-      sales_to_hire: 10,
+      engineers_to_hire: 5,
+      sales_to_hire: 5,
       salary_pct: 200,
     };
     const { outcomes } = advanceQuarter(state, decisions);
     expect(outcomes.status).toBe('lost');
   });
 
-  it('detects win when cumulative profit exceeds threshold', () => {
-    const state = makeState({ cumulative_profit: 49900, cash: 50000 });
+  it('detects win when Year 10 completes with positive cash', () => {
+    const state = makeState({ current_year: 10, current_quarter: 4, cash: 500000 });
     const decisions: Decisions = {
-      price: 200,
+      price: 500,
       engineers_to_hire: 0,
       sales_to_hire: 0,
       salary_pct: 100,
     };
     const { outcomes } = advanceQuarter(state, decisions);
-    // With existing sales force and quality, should sell some units at $200
-    if (outcomes.profit > 100) {
-      expect(outcomes.status).toBe('won');
-    }
+    // After Y10Q4, year becomes 11 → win if cash > 0
+    expect(outcomes.status).toBe('won');
+  });
+
+  it('does not win before Year 10 completes', () => {
+    const state = makeState({ current_year: 9, current_quarter: 4, cash: 5000000 });
+    const decisions: Decisions = {
+      price: 500,
+      engineers_to_hire: 0,
+      sales_to_hire: 0,
+      salary_pct: 100,
+    };
+    const { outcomes } = advanceQuarter(state, decisions);
+    expect(outcomes.status).toBe('active');
   });
 
   it('applies market factor', () => {
@@ -79,8 +89,8 @@ describe('advanceQuarter', () => {
     expect(boosted.units_sold).toBeGreaterThan(normal.units_sold);
   });
 
-  it('quality drifts toward engineer-heavy ratio', () => {
-    const state = makeState({ quality: 50, engineers: 10, sales: 0 });
+  it('quality increases by engineers * 0.5 each quarter (spec formula)', () => {
+    const state = makeState({ quality: 50, engineers: 4, sales: 2 });
     const decisions: Decisions = {
       price: 100,
       engineers_to_hire: 0,
@@ -88,7 +98,33 @@ describe('advanceQuarter', () => {
       salary_pct: 100,
     };
     const { outcomes } = advanceQuarter(state, decisions);
-    expect(outcomes.new_quality).toBeGreaterThan(50);
+    // quality += 4 * 0.5 = 52
+    expect(outcomes.new_quality).toBe(52);
+  });
+
+  it('quality caps at 100', () => {
+    const state = makeState({ quality: 99, engineers: 10, sales: 2 });
+    const decisions: Decisions = {
+      price: 100,
+      engineers_to_hire: 0,
+      sales_to_hire: 0,
+      salary_pct: 100,
+    };
+    const { outcomes } = advanceQuarter(state, decisions);
+    expect(outcomes.new_quality).toBe(100);
+  });
+
+  it('uses spec salary formula: salary_pct/100 * 30000 per person', () => {
+    const state = makeState({ engineers: 4, sales: 2 });
+    const decisions: Decisions = {
+      price: 100,
+      engineers_to_hire: 0,
+      sales_to_hire: 0,
+      salary_pct: 100,
+    };
+    const { outcomes } = advanceQuarter(state, decisions);
+    // 6 people × $30,000 = $180,000
+    expect(outcomes.costs).toBe(180000);
   });
 
   it('is deterministic — same inputs produce same outputs', () => {

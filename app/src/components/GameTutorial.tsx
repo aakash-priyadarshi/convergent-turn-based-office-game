@@ -330,8 +330,8 @@ export default function GameTutorial({ onComplete }: Props) {
 
             <div className="mt-5 rounded-lg border border-white/10 bg-white/5 p-3">
               <p className="font-mono text-[10px] text-slate-500 text-center">
-                💡 <strong className="text-slate-400">WIN:</strong> Reach $50,000
-                cumulative profit &nbsp;|&nbsp;{' '}
+                💡 <strong className="text-slate-400">WIN:</strong> Survive through Year 10
+                with positive cash &nbsp;|&nbsp;{' '}
                 <strong className="text-slate-400">LOSE:</strong> Run out of cash
                 ($0)
               </p>

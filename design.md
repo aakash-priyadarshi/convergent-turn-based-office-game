@@ -127,9 +127,8 @@ Client (React 19 + Framer Motion)
 - **Context-aware reasoning** — each bot generates dynamic text based on:
   - Cash level (critical / low / moderate / strong)
   - Quality level (poor / moderate / excellent)
-  - Profit trend (negative / positive / winning)
   - Team size and composition
-  - Proximity to $50K win condition
+  - Quarters remaining to Year 10 finish
 - **Situation assessment** (`assessSituation()`) — multi-part briefing with emoji-tagged warnings (⚠️ cash critical, 📉 quality poor, 🏆 near win, etc.)
 - **Auto-refresh on turn change** — bot advice automatically re-fetched 800ms after `turnVersion` changes
 - **Situation alert banner** — animated amber-glow alert at top of decision panel after each turn; auto-dismisses after 8s
@@ -141,13 +140,21 @@ Client (React 19 + Framer Motion)
 ### Simulation Engine
 Pure function: `advanceQuarter(state, decisions, marketFactor) → { newState, outcomes }`
 
-- **Revenue**: `units_sold × price`, where units = f(sales force √ scaling, quality bonus, price competitiveness, market factor)
-- **Costs**: hiring cost ($500/person) + quarterly salary (headcount × $400 × salary_pct)
-- **Quality drift**: moves 20% toward target each quarter; target = engineer_ratio × salary_multiplier × 100
-- **Win condition**: cumulative profit ≥ $50,000
+Implements the assignment spec model as-provided:
+- **Quality**: `quality += engineers * 0.5` (cap 100)
+- **Demand**: `quality * 10 - price * 0.0001` (floor 0)
+- **Units sold**: `demand * sales_staff * 0.5` (integer)
+- **Revenue**: `price * units`
+- **Salary cost**: `salary_pct / 100 * 30,000` per person per quarter
+- **Total payroll**: `salary_cost * (engineers + sales)`
+- **Net income**: `revenue - total_payroll`
+- **Cash**: `cash + net_income - hiring_cost`
+- **Hiring cost**: `new_hires * 5,000` (one-time)
+- **Win condition**: survive through Year 10 (40 quarters) with positive cash
 - **Lose condition**: cash ≤ $0 (bankruptcy)
 - **Quarter/year progression**: Q1→Q4 then year increments
 - **Deterministic**: same inputs always produce the same outputs
+- **Market factor**: optional enhancement (daily sine-wave 0.8–1.2× on units sold, cached via SWR)
 
 ### Market Factor System
 - **SWR cache pattern** — serves cached value from `external_cache` table; refreshes async if stale (>24h)

@@ -84,7 +84,7 @@ app/
 - Postgres persistence with RLS
 - KPI dashboard with last 4 quarters history
 - Office SVG visual (engineers blue, sales green, empty gray)
-- Win/lose detection ($50k profit / $0 cash)
+- Win/lose detection (survive Year 10 / $0 cash)
 
 ### JD Signal Features
 - **Spectators**: Anyone with the game URL can watch read-only (presence + feed)

@@ -11,10 +11,10 @@ export async function POST() {
       status: 'active',
       current_year: 1,
       current_quarter: 1,
-      cash: 10000,
+      cash: 1000000,
       quality: 50,
-      engineers: 2,
-      sales: 1,
+      engineers: 4,
+      sales: 2,
       cumulative_profit: 0,
       version: 0,
     })

@@ -9,10 +9,10 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     status: 'active',
     current_year: 1,
     current_quarter: 1,
-    cash: 10000,
+    cash: 1000000,
     quality: 50,
-    engineers: 2,
-    sales: 1,
+    engineers: 4,
+    sales: 2,
     cumulative_profit: 0,
     version: 0,
     created_at: '',
@@ -30,9 +30,8 @@ describe('bot strategies', () => {
     expect(rec.reasoning).toBeTruthy();
   });
 
-  it('Growth recommends aggressive hiring and low price', () => {
+  it('Growth recommends aggressive hiring', () => {
     const rec = getRecommendation('growth', makeState());
-    expect(rec.decisions.price).toBeLessThanOrEqual(80);
     expect(rec.decisions.engineers_to_hire + rec.decisions.sales_to_hire).toBeGreaterThanOrEqual(2);
   });
 
@@ -44,7 +43,7 @@ describe('bot strategies', () => {
   });
 
   it('Growth scales down hiring when cash is low', () => {
-    const lowCash = makeState({ cash: 2000 });
+    const lowCash = makeState({ cash: 200000 });
     const rec = getRecommendation('growth', lowCash);
     expect(rec.decisions.engineers_to_hire).toBeLessThanOrEqual(1);
     expect(rec.decisions.sales_to_hire).toBeLessThanOrEqual(1);

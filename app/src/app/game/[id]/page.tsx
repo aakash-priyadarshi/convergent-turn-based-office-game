@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import type { GameState, Turn, Decisions } from '@/lib/types';
+import type { GameState, Turn, Decisions, Outcomes } from '@/lib/types';
 import DecisionPanel from '@/components/DecisionPanel';
 import KpiCards from '@/components/KpiCards';
 import TurnHistory from '@/components/TurnHistory';
@@ -160,7 +160,7 @@ export default function GamePage() {
             </h2>
             <p className="font-mono text-xs text-slate-400 mt-2">
               {game.status === 'won'
-                ? `Reached $${Number(game.cumulative_profit).toLocaleString()} cumulative profit`
+                ? `Survived 10 years! Cumulative profit: $${Number(game.cumulative_profit).toLocaleString()}`
                 : 'Company ran out of operating capital'}
             </p>
             <Link
@@ -195,7 +195,7 @@ export default function GamePage() {
 
           {/* Right: KPIs, history, office */}
           <div className="lg:col-span-2 space-y-4">
-            <KpiCards game={game} />
+            <KpiCards game={game} lastOutcomes={turns.length > 0 ? (turns[0].outcomes as Outcomes) : undefined} />
             <OfficeSvg engineers={game.engineers} sales={game.sales} />
             <TurnHistory turns={turns} />
           </div>
