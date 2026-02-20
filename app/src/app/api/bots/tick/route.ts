@@ -1,14 +1,22 @@
-import { json } from '@/lib/api-helpers';
+import { json, errorResponse } from '@/lib/api-helpers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { advanceQuarter } from '@/lib/engine/simulation';
 import { getRecommendation } from '@/lib/engine/bots';
+import { NextRequest } from 'next/server';
 import type { GameState } from '@/lib/types';
 
 /**
  * Demo auto-play: advance one quarter for all active demo games.
  * Triggered by Vercel Cron or manual button.
+ * Secured via CRON_SECRET header in production.
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // Verify cron authorization in production
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
+    return errorResponse('Unauthorized', 401);
+  }
+
   const service = createServiceClient();
 
   // Find active demo games (bot participants, no human owner action needed)
