@@ -6,6 +6,26 @@ For a deeper system design and scalability write-up, see [approach.md](approach.
 
 **Live:** [convergent-turn-based-office-game.vercel.app](https://convergent-turn-based-office-game-aakash-priyadarshis-projects.vercel.app)
 
+## TL;DR for reviewers
+
+- **Server-authoritative simulation** — the client submits decisions; the server advances the quarter and persists the result
+- **Optimistic locking** — `games.version` prevents double-advances and handles retries safely
+- **Pure deterministic engine + unit tests** — the simulation lives in a side-effect-free function with Vitest coverage
+- **RLS + spectators** — Supabase Postgres with Row-Level Security; owners can write, anyone can view a game in read-only mode
+- **Postgres SWR cache (market factor)** — returns cached values immediately and refreshes in the background; safe because it’s a bounded (0.8–1.2×) multiplier and non-blocking by design
+
+## Documentation Guide
+
+This repo includes three short documents to make evaluation faster:
+
+- **README.md** — product overview, setup, feature list, and architecture decisions.
+- **DESIGN.md** — system architecture, data model, concurrency control, and risk mitigation.
+- **approach.md** — implementation story, tradeoffs, spec-alignment decisions, and scaling plan.
+
+If you are time-constrained, reading the TL;DR and the “Architecture Decisions” section in this README is enough to understand the core design.
+
+The core game is fully playable without AI, realtime, or bots; these are additive and non-blocking by design.
+
 ---
 
 ## Features
@@ -43,7 +63,7 @@ Responsive: stacks vertically on mobile, 3-column grid on desktop.
 
 ### Game Dashboard
 - **KPI cards** — Cash, Revenue, Net Income, Quality, Engineers, Sales, Cumulative Profit, Period
-- **Office floor SVG** — 30 desks color-coded by role (engineers/sales/empty)
+- **Office floor** — engineering + sales wings with dynamic grids (uses PNG icons)
 - **Turn history** — last 4 quarters with revenue, costs, profit breakdown
 - **Spectator mode** — anyone with the game link can watch in read-only
 - **Realtime presence** — "You + N spectators" with live/polling status indicator
@@ -74,6 +94,18 @@ Responsive: stacks vertically on mobile, 3-column grid on desktop.
 | Validation | Zod v4 |
 | Testing | Vitest (17 tests) |
 | Deployment | Vercel (auto-deploy from `main`) |
+
+---
+
+## Architecture Decisions
+
+- **Spec model as-provided** — simulation uses the exact formulas from the assignment spec (`quality += engineers * 0.5`, `demand = quality * 10 - price * 0.0001`, etc.) with no constant modifications
+- **Optimistic locking** — `games.version` column prevents double-advances
+- **Pure simulation engine** — `advanceQuarter()` is a pure function with no side effects; deterministic and testable
+- **RLS everywhere** — Supabase Row-Level Security on all 5 tables; writes restricted to owner, reads open for spectators
+- **SWR cache** — market factor cached in Postgres with `fetched_at` timestamp; serves stale while refreshing
+- **No paid APIs** — HuggingFace free tier for AI bios; template fallback if unavailable
+- **Polling fallback** — realtime presence degrades to 5s polling if Supabase channels fail
 
 ---
 
@@ -125,7 +157,7 @@ This creates 5 tables (`profiles`, `games`, `turns`, `participants`, `external_c
 ```bash
 npm run dev     # Development server at http://localhost:3000
 npm run build   # Production build
-npm run test    # Run 14 unit tests
+npm run test    # Run 17 unit tests
 npm run lint    # ESLint
 ```
 
@@ -187,18 +219,6 @@ app/
 | GET | `/api/external/market-factor` | None | Cached market factor |
 | POST | `/api/profile/generate` | Required | AI founder bio |
 | POST | `/api/bots/tick` | Cron | Auto-advance bot games |
-
----
-
-## Architecture Decisions
-
-- **Spec model as-provided** — simulation uses the exact formulas from the assignment spec (`quality += engineers * 0.5`, `demand = quality * 10 - price * 0.0001`, etc.) with no constant modifications
-- **Optimistic locking** — `games.version` column prevents double-advances
-- **Pure simulation engine** — `advanceQuarter()` is a pure function with no side effects; deterministic and testable
-- **RLS everywhere** — Supabase Row-Level Security on all 5 tables; writes restricted to owner, reads open for spectators
-- **SWR cache** — market factor cached in Postgres with `fetched_at` timestamp; serves stale while refreshing
-- **No paid APIs** — HuggingFace free tier for AI bios; template fallback if unavailable
-- **Polling fallback** — realtime presence degrades to 5s polling if Supabase channels fail
 
 ---
 

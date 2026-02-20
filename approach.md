@@ -1,6 +1,10 @@
 # Approach and System Design Notes
 
-This repo started as a simple turn based business simulation, but I treated it like a real product slice. The assignment asks for a vertical slice where the client submits decisions, the server runs the model, state is persisted, and the dashboard updates. I built that core loop first and then added a few extras that demonstrate product judgment.
+Reviewer summary — 1) Server-authoritative game loop
+2) Deterministic, testable simulation engine
+3) Product judgement: tradeoffs + additive enhancements
+
+This repo started as a simple turn based business simulation, but I treated it like a real product slice. The assignment asks for a vertical slice where the client submits decisions, the server runs the model, state is persisted, and the dashboard updates. I built the core loop first and then added a few extras that demonstrate product judgment.
 
 ## What I built
 
@@ -9,7 +13,7 @@ Core loop:
 - Quarterly decision panel with price, engineers to hire, sales to hire, and salary percent.
 - A single server authoritative advance endpoint that validates input, loads state, runs the simulation, persists results, and returns updated state.
 - A dashboard that shows cash, revenue, net income, headcount by role, quarter, and the last four quarters of history.
-- An office visualization that updates with headcount growth and keeps empty capacity visible.
+- An office visualization that updates with headcount growth.
 - Win and lose states that match the assignment spec.
 
 Extras that I added on purpose:
@@ -19,12 +23,14 @@ Extras that I added on purpose:
 - Optional founder bio generation using a free AI API.
 - A small global leaderboard.
 
+These extras are intentionally optional and non-blocking. The game remains fully playable if AI, realtime, or bots are unavailable.
+
 I kept these extras as additive features. They do not move simulation authority to the client.
 
 ## Key technical decisions I stand behind
 
 ### Server authoritative simulation
-I did not compute outcomes on the client. The client only submits player intent. The server reads the current game row, runs the pure function simulation, writes the updated state, and appends a turn log. This makes the system debuggable and prevents client tampering. It also lets me unit test the simulation without involving HTTP.
+I did not compute outcomes on the client. The client only submits player intent. The server reads the current game row, runs the pure function simulation, writes the updated state, and appends a turn log. This keeps the system debuggable, prevents client tampering, and lets me unit test the simulation without involving HTTP.
 
 ### Pure function core
 The simulation engine is a pure function that takes (state, decisions) and returns (newState, outcomes). This separation is what makes testing and iteration easy. It also allows me to introduce enhancements like a market factor without breaking the core game state transitions.
@@ -38,7 +44,7 @@ Supabase row level security is a good fit for this assignment. I opened reads fo
 ## Issues I hit and how I solved them
 
 ### Spec alignment on the simulation model
-I initially had a more game like model with extra tuning and a profit threshold win condition. When I re audited the assignment, I realized the spec expects an exact model and a different win condition.
+I initially had a more game like model with extra tuning and a profit threshold win condition. When I re audited the assignment, I switched to the spec model and aligned the win condition.
 
 I fixed this by:
 - Updating initial state to $1,000,000 cash, 4 engineers, 2 sales, quality 50.
@@ -53,7 +59,7 @@ A note on the spec itself: price has a coefficient of 0.0001 in the demand equat
 Once the win condition became “survive to Year 10,” the bot logic needed to shift from “maximize profit now” to “avoid bankruptcy until the finish line.” I added late game survival mode to the bots so they freeze hiring near the end and focus on keeping cash positive.
 
 ## Why the UI uses SVG and code driven assets
-I intentionally used SVG for the office visualization and some UI elements. SVG is light, scales cleanly across screen sizes, and avoids shipping heavy image assets. In a small game UI, this is a practical tradeoff. You get responsive visuals without worrying about image optimization pipelines.
+I intentionally used SVG for the office visualization and some UI elements. SVG is light, scales cleanly across screen sizes, and avoids shipping heavy image assets. In a small game UI, this is a practical tradeoff.
 
 If I had more time and creative freedom, I would add richer assets, but I would still keep them performance aware. I would lean on vector assets where possible and treat raster images as something that needs CDN level caching.
 

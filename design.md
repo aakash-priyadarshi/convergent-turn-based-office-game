@@ -21,6 +21,13 @@ Client (React 19 + Framer Motion)
 
 **Tech Stack**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Framer Motion, Supabase (Auth + Postgres + Realtime), HuggingFace Inference API, Vitest, Vercel
 
+## Design priorities
+
+- server-authoritative state transitions
+- deterministic simulation + testability
+- secure persistence with RLS and ownership checks
+- additive JD signals (realtime/caching/AI) that cannot break core gameplay
+
 ---
 
 ## Data Model
@@ -107,7 +114,7 @@ Client (React 19 + Framer Motion)
 - **Bio refresh on onboarding complete** — scorecard updates without page reload
 
 ### Game Dashboard
-- **3-column responsive layout** — decisions + advisors (left), KPIs + office + history (right)
+- **3-column responsive layout** — decisions + advisors (left), KPIs + history (right), office floor full-width below
 - **Ownership detection** — checks authenticated user vs `game.owner_id`
 - **Spectator mode** — non-owners see "SPECTATING" read-only panel; badge in top bar
 - **Error banner** — animated red alert for submission failures
@@ -182,7 +189,7 @@ Implements the assignment spec model as-provided:
 - **Strategy overview finale** — describes CFO, Growth, Quality strategies with icons and colors; win/lose conditions
 
 ### KPI Cards
-- **6 metrics displayed**: Cash, Quality, Engineers, Sales, Cumulative Profit, Period (Year/Quarter)
+- **8 metrics displayed**: Cash, Revenue, Net Income, Quality, Engineers, Sales, Cumulative Profit, Period (Year/Quarter)
 - **Color-coded thresholds** — red for low cash (<$2K), amber for low quality (<60%), green for positive values
 - **Tutorial-targeted** via `data-tutorial` attribute
 
@@ -192,10 +199,10 @@ Implements the assignment spec model as-provided:
 - **Server-side limiting** — API returns only the 4 most recent turns
 
 ### Office Floor Visualization
-- **SVG grid** of 30 desks
-- **Color-coded**: blue = engineers (🛠), green = sales (📞), gray = empty
-- **Dynamic** — updates based on current headcount
-- **Legend** with Eng / Sales / Empty counts
+- **Two wings** — Engineering and Sales shown as separate sections
+- **Dynamic grids** — no fixed desk cap; renders one icon per employee
+- **Icons** — uses lightweight PNG assets from `/public` for engineers and sales
+- **Responsive** — full-width section below the main dashboard grid
 - **Accessible** — `role="img"` with descriptive `aria-label`
 
 ### Profile Page
@@ -207,20 +214,11 @@ Implements the assignment spec model as-provided:
 
 ## Visual Design System
 
-### Dark Command-Center Theme
-- **Slate-950 background** with glassmorphism cards (`bg-white/5`, `backdrop-blur`, `border-white/10`)
-- **Monospace typography** (`font-mono`) throughout for "terminal/hacker" aesthetic
-- **Geist font family** — Geist Sans and Geist Mono via `next/font/google`
-- **Custom scrollbar** — thin 6px translucent bar matching dark theme
-
-### Animated Elements
-- **Particle background** — 60 floating particles with connection lines between nearby ones; multiple colors (blue, green, indigo, cyan); canvas-rendered with `requestAnimationFrame`
-- **CSS grid overlay** — subtle grid lines with radial mask gradient
-- **Radial glow orbs** — blurred blue and green gradient effects
-- **Glitch wrapper** — entry animation with hue-rotate and position jitter on auth cards
-- **Market ticker SVG** — animated dual-line stock chart at bottom of auth pages
-- **ScrambleButton** — text scramble/"decrypting" animation cycling through random characters; shimmer sweep on hover
-- **Framer Motion everywhere** — fade-in, slide, scale, AnimatePresence for modals, alerts, route transitions, and list items
+- **Dark command-center theme** — slate background + glassy cards for a consistent "ops dashboard" feel
+- **Monospace-forward UI** — terminal-like typography to match the simulation/control-room vibe
+- **Motion used as feedback** — subtle transitions for state changes (advance, alerts, modals), not as core functionality
+- **Lightweight visuals** — vector/canvas-style backgrounds and small icon assets to keep payloads small
+- **Clear affordances** — color-coded statuses (win/lose, cash warnings) and readable hierarchy under stress
 
 ---
 
