@@ -1,0 +1,28 @@
+# Dependencies
+app/node_modules/
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Next.js
+app/.next/
+app/out/
+
+# Build
+app/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
