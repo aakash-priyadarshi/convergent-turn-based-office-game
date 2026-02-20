@@ -17,6 +17,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [founderBio, setFounderBio] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -36,6 +37,9 @@ export default function HomePage() {
 
       if (!profile?.founder_bio && !user.user_metadata?.display_name) {
         setShowOnboarding(true);
+      }
+      if (profile?.founder_bio) {
+        setFounderBio(profile.founder_bio);
       }
 
       const { data } = await supabase
@@ -77,7 +81,23 @@ export default function HomePage() {
 
       {/* Onboarding modal for first-time users */}
       {showOnboarding && (
-        <OnboardingModal onComplete={() => setShowOnboarding(false)} />
+        <OnboardingModal onComplete={() => {
+          setShowOnboarding(false);
+          // Refresh bio after onboarding
+          (async () => {
+            const { data: { user: u } } = await supabase.auth.getUser();
+            if (!u) return;
+            if (u.user_metadata?.display_name) {
+              setUser(u);
+            }
+            const { data: p } = await supabase
+              .from('profiles')
+              .select('founder_bio')
+              .eq('id', u.id)
+              .single();
+            if (p?.founder_bio) setFounderBio(p.founder_bio);
+          })();
+        }} />
       )}
 
       <div className="relative z-10 max-w-3xl mx-auto px-6 py-10">
@@ -121,6 +141,85 @@ export default function HomePage() {
             </button>
           </div>
         </motion.div>
+
+        {/* Founder Scorecard */}
+        {games.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm mb-8 overflow-hidden"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              {/* Left: High Score */}
+              <div className="p-6 border-b md:border-b-0 md:border-r border-white/10">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500 block mb-2">
+                  HIGH SCORE
+                </span>
+                {(() => {
+                  const bestGame = games.reduce((best, g) =>
+                    Number(g.cumulative_profit) > Number(best.cumulative_profit) ? g : best
+                  );
+                  const highScore = Number(bestGame.cumulative_profit);
+                  const isPositive = highScore >= 0;
+                  const wins = games.filter(g => g.status === 'won').length;
+                  const totalGames = games.length;
+                  return (
+                    <>
+                      <div className={`font-mono text-3xl font-bold tracking-tight ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {isPositive ? '+' : ''}${Math.abs(highScore).toLocaleString()}
+                      </div>
+                      <div className="font-mono text-[10px] text-slate-500 mt-2 space-x-3">
+                        <span>
+                          <span className="text-slate-400">{wins}</span> WIN{wins !== 1 ? 'S' : ''}
+                        </span>
+                        <span className="text-slate-700">&middot;</span>
+                        <span>
+                          <span className="text-slate-400">{totalGames}</span> VENTURE{totalGames !== 1 ? 'S' : ''}
+                        </span>
+                        <span className="text-slate-700">&middot;</span>
+                        <span>
+                          BEST: <span className="text-slate-400">Y{bestGame.current_year} Q{bestGame.current_quarter}</span>
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Right: Player Story */}
+              <div className="p-6">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500 block mb-2">
+                  FOUNDER&apos;S STORY
+                </span>
+                {founderBio ? (
+                  <p className="font-mono text-xs text-slate-300 leading-relaxed line-clamp-4">
+                    {founderBio}
+                  </p>
+                ) : (
+                  <div>
+                    <p className="font-mono text-xs text-slate-600 italic">
+                      No story yet — complete your profile to craft your founder narrative.
+                    </p>
+                    <Link
+                      href="/profile"
+                      className="inline-block mt-2 font-mono text-[10px] uppercase tracking-wider text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      CREATE YOUR STORY &rarr;
+                    </Link>
+                  </div>
+                )}
+                {typeof user?.user_metadata?.display_name === 'string' && (
+                  <div className="mt-3 pt-3 border-t border-white/5">
+                    <span className="font-mono text-[10px] text-slate-600">
+                      &mdash; {user.user_metadata.display_name}, Founder
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* New game button */}
         <motion.button
